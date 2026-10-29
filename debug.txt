@@ -1,0 +1,247 @@
+󱩡 : 32 12
+	33 14
+	30 11
+	34 12
+󱩡 : 34 27
+	33 24
+󱩡 : 46 23
+	44 20
+	43 20
+󱩡 : 13 15
+	14 18
+	11 16
+󱩡 : 13 14
+	11 16
+	15 11
+󱩡 : 48 49
+	47 49
+󱩡 : 14 5
+	17 2
+󱩡 : 9 32
+	6 32
+󱩡 : 1 31
+	0 32
+	4 28
+󱩡 : 48 45
+	None
+ : 22 31
+	None
+ : 42 0
+	None
+ : 3 23
+	None
+ : 5 25
+	None
+ : 7 16
+	None
+ : 47 48
+	48 49
+	48 45
+ : 28 10
+	32 12
+ : 46 12
+	None
+ : 33 38
+	None
+ : 6 2
+	None
+󱔐 : 33 14
+	None
+󱔐 : 38 35
+	None
+󱔐 : 1 38
+	None
+󱔐 : 19 38
+	None
+󱔐 : 34 12
+	None
+󱔐 : 4 28
+	None
+󱔐 : 49 4
+	None
+󱔐 : 28 39
+	None
+󱔐 : 17 16
+	None
+󱔐 : 17 30
+	None
+󱔐 : 30 29
+	None
+󱔐 : 44 18
+	None
+󱔐 : 45 19
+	None
+󱔐 : 8 38
+	None
+󱔐 : 41 5
+	None
+󱔐 : 4 23
+	None
+󱔐 : 44 6
+	None
+󱔐 : 33 31
+	None
+󱔐 : 42 45
+	None
+󱔐 : 25 44
+	None
+󱔐 : 7 7
+	None
+󱔐 : 0 32
+	None
+󱔐 : 43 20
+	None
+󱔐 : 19 21
+	None
+󱔐 : 47 49
+	None
+󱔐 : 15 11
+	None
+󱔐 : 34 28
+	None
+󱔐 : 43 19
+	None
+󱔐 : 33 42
+	None
+󱔐 : 8 7
+	None
+󱔐 : 9 41
+	None
+󱔐 : 21 37
+	None
+󱔐 : 14 18
+	None
+󱔐 : 24 46
+	None
+󱔐 : 29 24
+	None
+󱔐 : 23 42
+	None
+󱔐 : 28 26
+	None
+󱔐 : 21 15
+	None
+󱔐 : 28 25
+	None
+󱔐 : 45 7
+	None
+󱔐 : 31 32
+	None
+󱔐 : 21 9
+	None
+󱔐 : 6 37
+	None
+󱔐 : 21 33
+	None
+󱔐 : 9 48
+	None
+󱔐 : 9 26
+	None
+󱔐 : 7 2
+	None
+󱔐 : 38 41
+	None
+󱔐 : 12 20
+	None
+󱔐 : 30 11
+	None
+󱔐 : 8 23
+	None
+󱔐 : 22 24
+	None
+󱔐 : 3 7
+	None
+󱔐 : 44 9
+	None
+󱔐 : 33 35
+	None
+󱔐 : 45 16
+	None
+󱔐 : 33 39
+	None
+󱔐 : 25 23
+	None
+󱔐 : 28 2
+	None
+󱔐 : 39 12
+	None
+󱔐 : 9 42
+	None
+󱔐 : 6 32
+	None
+󱔐 : 3 15
+	None
+󱔐 : 23 18
+	None
+󱔐 : 11 16
+	None
+󱔐 : 25 27
+	None
+󱔐 : 46 27
+	None
+󱔐 : 24 6
+	None
+󱔐 : 2 42
+	None
+󱔐 : 36 38
+	None
+󱔐 : 44 20
+	None
+󱔐 : 44 33
+	None
+󱔐 : 44 46
+	None
+󱔐 : 23 24
+	None
+󱔐 : 19 9
+	None
+󱔐 : 47 19
+	None
+󱔐 : 33 24
+	None
+󱔐 : 4 38
+	None
+󱔐 : 29 30
+	None
+󱔐 : 8 16
+	None
+󱔐 : 24 25
+	None
+󱔐 : 6 19
+	None
+󱔐 : 0 21
+	None
+󱔐 : 11 23
+	None
+󱔐 : 15 43
+	None
+󱔐 : 28 15
+	None
+󱔐 : 6 4
+	None
+󱔐 : 15 42
+	None
+󱔐 : 28 48
+	None
+󱔐 : 26 47
+	None
+󱔐 : 44 16
+	None
+󱔐 : 16 9
+	None
+󱔐 : 17 2
+	None
+󱔐 : 35 1
+	None
+󱔐 : 8 28
+	None
+󱔐 : 7 42
+	None
+󱔐 : 4 0
+	None
+󱔐 : 34 46
+	None
+󱔐 : 37 32
+	None
+󱔐 : 13 17
+	None

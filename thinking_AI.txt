@@ -1,0 +1,37 @@
+is_almost_win wont return bool,
+  it will return all point win in win_need_how_long - 1;
+  if no win, then return None
+# OK
+-----------w--------w--------w---------w---------w-----------
+all_point: hashmap(posint,mark)
+
+if is_almost_win(robot) return Some(points)
+  for loop the points.iter()
+  continue if that point isnt empty
+  return that point
+for w in 1..win_long - 2
+if is_almost_win(robot,w) return Some(points)
+  for loop the points.iter()
+  continue if that point isnt empty
+  that point use entry(all_point).or_insect(0) += 1
+  
+if is_almost_win(player) return Some(points)
+  for loop the points.iter()
+  continue if that point isnt empty
+  that point use entry(all_point).or_insect(0) += 1
+for w in 1..win_long - 2
+if is_almost_win(robot,w) return Some(points)
+  for loop the points.iter()
+  continue if that point isnt empty
+  that point use entry(all_point).or_insect(0) += 0.2
+  
+
+if all_point.is_empty{
+	return a random point by a empty map
+}
+return the higheset point in all_points
+
+use a file just for change config.rs:
+if this round win, try_win += 0.5
+if this round lose, try_block_player += 1, try_block_player_earlier += 0.2
+
