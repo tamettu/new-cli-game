@@ -11,12 +11,8 @@ use rust_decimal::Decimal;
 use smallvec::SmallVec;
 
 use crate::{
-    game_tools::{
-        CoorUsize,
-        OptionGame::{self},
-    },
+    game_tools::{CoorIsize, CoorUsize, OptionTUI},
     little_life_sim::{Creature, DietaryCategories, Gender, Specie, TrophicLevel},
-    tictactoe::AiValues,
 };
 
 mod config;
@@ -170,6 +166,7 @@ fn main() {
     //     bot_1_ai_values.def_might_win_value,
     //     bot_1_win
     // );
+
     let mut rng = rand::rng();
     let mut id_generator = little_life_sim::IdGenerator::new();
     let mut sim_map = gen_map::GameMap::new(50, 50);
@@ -219,6 +216,8 @@ fn main() {
         let mut max = 10;
         if s.trophic_level == TrophicLevel::Producer {
             max = 100;
+        } else {
+            max = 10;
         }
         for _ in 0..max {
             let Some(new_coor) = all_empty_place.choose(&mut rng).cloned() else {
@@ -245,12 +244,18 @@ fn main() {
             ),
             false,
         );
-        if let Some(cs) = i.get_near_by_stuffs_place(
+        if let Some(cs) = i.scan_area(
             &sim_map,
             &ref_creatures_data,
-            all_species[i.sid as usize].detect_positive_range,
+            if all_species[i.sid as usize].detect_positive_range
+                > all_species[i.sid as usize].detect_negative_range
+            {
+                all_species[i.sid as usize].detect_positive_range
+            } else {
+                all_species[i.sid as usize].detect_negative_range
+            },
         ) {
-            if let Some(result) = i.get_near_by_food_coor(&sim_map, &cs, &ref_species_data) {
+            if let Some(result) = i.get_food_place(&cs, &ref_species_data) {
                 for c in result {
                     game_tools::debug(&format!("\t{} {}\n", c.y, c.x), false);
                 }

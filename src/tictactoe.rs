@@ -1,13 +1,10 @@
-use crate::game_tools::{
-    CoorIsize, CoorUsize,
-    OptionGame::{self, CellCoor, Continue},
-};
+use crate::game_tools::OptionTUI::{self, CellCoor, Close, Continue, Quit, Stop};
+use crate::game_tools::{CoorIsize, CoorUsize};
 use crate::{
     config, gen_map,
     get_input::{self, RawGuard, get_input_with_enter},
     menu,
 };
-use OptionGame::{Close, Quit, Stop};
 use crossterm::event::KeyEventKind;
 use crossterm::{event::KeyCode, terminal};
 use rust_decimal::{Decimal, prelude::FromPrimitive};
@@ -53,7 +50,7 @@ fn find_the_best_move(
     def_might_win_value: Decimal,
     think_time: usize,
     neurotic_rate: usize,
-) -> OptionGame {
+) -> OptionTUI {
     //------ ------------ ---- Update Display---- ----- ------------ ------------ -------
     // map.show_map(map_len);
     // print!(
@@ -152,7 +149,7 @@ fn find_the_best_move(
             }
         }
         time_sleep(&start_thinking, think_time);
-        OptionGame::CellCoor(max_mark_k.clone())
+        OptionTUI::CellCoor(max_mark_k.clone())
     } else {
         time_sleep(&start_thinking, think_time);
         CellCoor(CoorUsize::new(map.width / 2, map.height / 2))
@@ -172,7 +169,7 @@ fn return_will_win_pos(
         added_value: &CoorIsize,
         map: &gen_map::GameMap,
     ) -> Option<CoorIsize> {
-        coor.add(added_value).filter(|r| {
+        (*coor + CoorIsize::new(added_value.x, added_value.y)).filter(|r| {
             !(r.x < 0 || r.y < 0 || r.x >= map.width as isize || r.y >= map.height as isize)
         })
     }
@@ -296,7 +293,7 @@ fn player_move(
     rg: &get_input::RawGuard,
     map: &mut gen_map::GameMap,
     player_icon: &str,
-) -> OptionGame {
+) -> OptionTUI {
     //------ ------------ ------- ------- init ------------ ------------ ----------
     let mut curr_x = map.width / 2;
     let mut curr_y = map.height / 2;
@@ -432,7 +429,7 @@ pub fn start_game(
     win_need_how_long: usize,
     think_time: usize,
     values: &AiValues,
-) -> OptionGame {
+) -> OptionTUI {
     //------ ---------- ------- ----- init --- ------------ ------------ ----------
     let is_bot_mode = is_bot_mode(rg);
     let mut game_map = gen_map::GameMap::new(width, heigth);

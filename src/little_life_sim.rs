@@ -118,7 +118,17 @@ impl Creature {
     pub fn is_dead(&self) -> bool {
         self.hp_left == 0
     }
-    fn check_vertical_range_stuffs<'a>(
+
+    pub fn is_target_in_range(&self, target_coor: CoorUsize, range: usize) -> bool {
+        let is_y_in_range = (target_coor.y > self.pos.y && target_coor.y - self.pos.y <= range)
+            || (target_coor.y <= self.pos.y && self.pos.y - target_coor.y <= range);
+
+        let is_x_in_range = (target_coor.x > self.pos.x && target_coor.x - self.pos.x <= range)
+            || (target_coor.x <= self.pos.x && self.pos.x - target_coor.x <= range);
+
+        is_y_in_range && is_x_in_range
+    }
+    fn scan_vertical_line<'a>(
         map: &gen_map::GameMap,
         curr_coor: &CoorUsize,
         detect_range: usize,
@@ -148,7 +158,7 @@ impl Creature {
         }
         Some(all_target_place)
     }
-    pub fn get_near_by_stuffs_place<'a>(
+    pub fn scan_area<'a>(
         &self,
         map: &gen_map::GameMap,
         all_creature_place: &[&'a Creature],
@@ -164,7 +174,7 @@ impl Creature {
                     all_target_place.push(k);
                 };
 
-                if let Some(new_coor) = Self::check_vertical_range_stuffs(
+                if let Some(new_coor) = Self::scan_vertical_line(
                     map,
                     &new_top_y_coor,
                     range,
@@ -184,7 +194,7 @@ impl Creature {
                 if let Some(&k) = all_creature_corr_and_creature.get(&new_bottom_y_coor) {
                     all_target_place.push(k);
                 }
-                if let Some(new_coor) = Self::check_vertical_range_stuffs(
+                if let Some(new_coor) = Self::scan_vertical_line(
                     map,
                     &new_bottom_y_coor,
                     range,
@@ -199,9 +209,8 @@ impl Creature {
         }
         Some(all_target_place)
     }
-    pub fn get_near_by_food_coor(
+    pub fn get_food_place(
         &self,
-        map: &gen_map::GameMap,
         all_creatures: &[&Creature],
         all_species: &[&Specie],
     ) -> Option<Vec<CoorUsize>> {
@@ -212,9 +221,11 @@ impl Creature {
                 .filter(|c| {
                     let target_specie = &all_species[c.sid as usize];
                     target_specie.trophic_level == TrophicLevel::Producer
+                        && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
                 })
                 .map(|c| c.pos)
                 .collect(),
+
             a if a.dietarycategories == DietaryCategories::Carnivorous => all_creatures
                 .iter()
                 .filter(|c| {
@@ -223,9 +234,11 @@ impl Creature {
                         && self.sid != c.sid
                         && (self_specie.trophic_level == TrophicLevel::Top
                             || target_specie.trophic_level < self_specie.trophic_level)
+                        && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
                 })
                 .map(|c| c.pos)
                 .collect(),
+
             a if a.dietarycategories == DietaryCategories::Omnivorous => all_creatures
                 .iter()
                 .filter(|c| {
@@ -233,9 +246,11 @@ impl Creature {
                     self.sid != c.sid
                         && (self_specie.trophic_level == TrophicLevel::Top
                             || target_specie.trophic_level < self_specie.trophic_level)
+                        && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
                 })
                 .map(|c| c.pos)
                 .collect(),
+
             _ => return None,
         };
         if all_food_coor.is_empty() {
@@ -244,37 +259,26 @@ impl Creature {
             Some(all_food_coor)
         }
     }
-    // pub fn get_near_by_negative_stuffs_coor(
-    //     &self,
-    //     map: &gen_map::GameMap,
-    //     all_species: &[Creature],
-    // ) -> Option<Vec<CoorUsize>> {
-    //     let mut all_good_species_index: Vec<usize> = Vec::new();
-    //     for s in 0..all_species.len() {
-    //         if !(all_species[s].species.trophic_level == TrophicLevel::Top
-    //             || all_species[s].species.trophic_level > self.specie.trophic_level)
-    //         {
-    //             continue;
-    //         }
-    //         all_good_species_index.push(s);
-    //     }
-    //     let mut all_good_pos: Vec<CoorUsize> = vec![];
-    //     for gs in all_good_species_index {
-    //         let Some(result) = self.get_near_by_stuffs_place(
-    //             map,
-    //             &all_species[gs]
-    //                 .creature_data
-    //                 .iter()
-    //                 .map(|c| c.pos)
-    //                 .collect(),
-    //             self.specie.detect_positive_range,
-    //         ) else {
-    //             return None;
-    //         };
-    //         all_good_pos.extend(result);
-    //     }
-    //     Some(all_good_pos)
-    // }
+    pub fn get_same_specie_mobs_place(
+        &self,
+        all_creatures: &[&Creature],
+        all_species: &[&Specie],
+    ) -> Option<Vec<CoorUsize>> {
+        let self_specie = &all_species[self.sid as usize];
+        let all_food_coor: Vec<CoorUsize> = all_creatures
+            .iter()
+            .filter(|c| {
+                c.sid == self.sid
+                    && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
+            })
+            .map(|c| c.pos)
+            .collect();
+        if all_food_coor.is_empty() {
+            None
+        } else {
+            Some(all_food_coor)
+        }
+    }
 
     // pub fn walk(&self, map: &gen_map::GameMap){
     //     is_near_negative = if !(self.dietary_categorie == DietaryCategories::Carnivorous)
