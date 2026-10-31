@@ -212,6 +212,9 @@ fn main() {
         0,
         &mut id_generator,
     ));
+
+    // auto create Creatures
+
     for s in all_species.iter() {
         let mut max = 10;
         if s.trophic_level == TrophicLevel::Producer {

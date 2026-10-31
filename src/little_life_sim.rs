@@ -167,13 +167,18 @@ impl Creature {
         let mut all_target_place: Vec<&Creature> = vec![];
         let all_creature_corr_and_creature: HashMap<CoorUsize, &Creature> =
             all_creature_place.iter().map(|c| (c.pos, *c)).collect();
+        if let Some(self_line) =
+            Self::scan_vertical_line(map, &self.pos, range, &all_creature_corr_and_creature)
+        {
+            all_target_place.extend(self_line);
+        }
         for y in 1..=range {
-            if let Some(top_y) = self.pos.y.checked_sub_signed(y as isize) {
+            if let Some(top_y) = self.pos.y.checked_sub(y) {
                 let new_top_y_coor = CoorUsize::new(self.pos.x, top_y);
+
                 if let Some(&k) = all_creature_corr_and_creature.get(&new_top_y_coor) {
                     all_target_place.push(k);
                 };
-
                 if let Some(new_coor) = Self::scan_vertical_line(
                     map,
                     &new_top_y_coor,
@@ -184,12 +189,7 @@ impl Creature {
                 }
             }
 
-            if let Some(bottom_y) = self
-                .pos
-                .y
-                .checked_add_signed(y as isize)
-                .filter(|y| !(*y > map.height - 1))
-            {
+            if let Some(bottom_y) = self.pos.y.checked_add(y).filter(|&y| !(y > map.height - 1)) {
                 let new_bottom_y_coor = CoorUsize::new(self.pos.x, bottom_y);
                 if let Some(&k) = all_creature_corr_and_creature.get(&new_bottom_y_coor) {
                     all_target_place.push(k);
@@ -215,8 +215,8 @@ impl Creature {
         all_species: &[&Specie],
     ) -> Option<Vec<CoorUsize>> {
         let self_specie = &all_species[self.sid as usize];
-        let all_food_coor: Vec<CoorUsize> = match self_specie {
-            a if a.dietarycategories == DietaryCategories::Herbivorous => all_creatures
+        let all_food_coor: Vec<CoorUsize> = match self_specie.dietarycategories {
+            DietaryCategories::Herbivorous => all_creatures
                 .iter()
                 .filter(|c| {
                     let target_specie = &all_species[c.sid as usize];
@@ -226,7 +226,7 @@ impl Creature {
                 .map(|c| c.pos)
                 .collect(),
 
-            a if a.dietarycategories == DietaryCategories::Carnivorous => all_creatures
+            DietaryCategories::Carnivorous => all_creatures
                 .iter()
                 .filter(|c| {
                     let target_specie = &all_species[c.sid as usize];
@@ -239,7 +239,7 @@ impl Creature {
                 .map(|c| c.pos)
                 .collect(),
 
-            a if a.dietarycategories == DietaryCategories::Omnivorous => all_creatures
+            DietaryCategories::Omnivorous => all_creatures
                 .iter()
                 .filter(|c| {
                     let target_specie = &all_species[c.sid as usize];
