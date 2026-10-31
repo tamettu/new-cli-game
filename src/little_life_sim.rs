@@ -481,7 +481,7 @@ impl Creature {
 
                 CoorIsize::new(
                     ((all_vector.x) > (0)) as isize - ((all_vector.x) < (0)) as isize,
-                    ((all_vector.x) > (0)) as isize - ((all_vector.x) < (0)) as isize,
+                    ((all_vector.y) > (0)) as isize - ((all_vector.y) < (0)) as isize,
                 )
             }
             _ => CoorIsize::new(
