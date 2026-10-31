@@ -1,6 +1,6 @@
 use std::fs::OpenOptions;
 use std::io::Write;
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, Div, Mul};
 pub enum OptionTUI {
     Quit,
     Stop,
@@ -20,7 +20,7 @@ pub enum OptionTUI {
 /// let res = coor * CoorUsize::new(x,y);   // Option<Self> Multiplication
 /// let res = coor / CoorUsize::new(x,y);   // Option<Self> Divisor
 /// ```
-#[derive(PartialEq, PartialOrd, Eq, Copy, Clone, Hash)]
+#[derive(PartialEq, PartialOrd, Eq, Copy, Clone, Hash, Ord)]
 pub struct CoorUsize {
     pub x: usize,
     pub y: usize,
@@ -28,6 +28,27 @@ pub struct CoorUsize {
 impl CoorUsize {
     pub fn new(x: usize, y: usize) -> Self {
         CoorUsize { x, y }
+    }
+    pub fn to_coor_isize(&self) -> CoorIsize {
+        CoorIsize::new(self.x as isize, self.y as isize)
+    }
+    pub fn abs_isize(&self, other: CoorIsize) -> CoorUsize {
+        return CoorUsize::new(
+            other.x.abs_diff(self.x as isize),
+            other.y.abs_diff(self.y as isize),
+        );
+    }
+    pub fn abs_usize(&self, other: CoorUsize) -> CoorUsize {
+        return CoorUsize::new(other.x.abs_diff(self.x), other.y.abs_diff(self.y));
+    }
+    pub fn vector_to(&self, other: CoorIsize) -> CoorIsize {
+        CoorIsize::new(
+            ((self.x as isize) < (other.x)) as isize - ((self.x as isize) > (other.x)) as isize,
+            ((self.y as isize) < (other.y)) as isize - ((self.y as isize) > (other.y)) as isize,
+        )
+    }
+    pub fn flatten(&self, total_width: usize) -> usize {
+        self.y * total_width + self.x
     }
 }
 impl Add for CoorUsize {
@@ -78,6 +99,30 @@ impl Div for CoorUsize {
         Some(CoorUsize::new(new_x, new_y))
     }
 }
+impl Mul<usize> for CoorUsize {
+    type Output = Option<Self>;
+    fn mul(self, other: usize) -> Self::Output {
+        let Some(new_x) = self.x.checked_mul(other) else {
+            return None;
+        };
+        let Some(new_y) = self.y.checked_mul(other) else {
+            return None;
+        };
+        Some(CoorUsize::new(new_x, new_y))
+    }
+}
+impl Div<usize> for CoorUsize {
+    type Output = Option<Self>;
+    fn div(self, other: usize) -> Self::Output {
+        let Some(new_x) = self.x.checked_div(other) else {
+            return None;
+        };
+        let Some(new_y) = self.y.checked_div(other) else {
+            return None;
+        };
+        Some(CoorUsize::new(new_x, new_y))
+    }
+}
 
 /// 2D item `isize only`
 /// Can only use `+` to `add` or `sub (Can CoorUsize)`
@@ -93,7 +138,7 @@ impl Div for CoorUsize {
 /// let res = coor * CoorIsize::new(x,y); // Option<Self> Multiplication
 /// let res = coor / CoorIsize::new(x,y); // Option<Self> Divisor
 /// ```
-#[derive(PartialEq, PartialOrd, Eq, Copy, Clone, Hash)]
+#[derive(PartialEq, PartialOrd, Eq, Copy, Clone, Hash, Ord)]
 pub struct CoorIsize {
     pub x: isize,
     pub y: isize,
@@ -101,6 +146,35 @@ pub struct CoorIsize {
 impl CoorIsize {
     pub fn new(x: isize, y: isize) -> Self {
         CoorIsize { x, y }
+    }
+    pub fn abs(&self, other: Self) -> CoorUsize {
+        return CoorUsize::new(other.x.abs_diff(self.x), other.y.abs_diff(self.y));
+    }
+    pub fn abs_usize(&self, other: CoorUsize) -> CoorUsize {
+        return CoorUsize::new(
+            self.x.abs_diff(other.x as isize),
+            self.y.abs_diff(other.y as isize),
+        );
+    }
+    pub fn vector_to(&self, other: CoorIsize) -> CoorIsize {
+        CoorIsize::new(
+            ((self.x) < (other.x)) as isize - ((self.x as isize) > (other.x)) as isize,
+            ((self.y) < (other.y)) as isize - ((self.y as isize) > (other.y)) as isize,
+        )
+    }
+    pub fn to_coor_usize(&self) -> CoorUsize {
+        CoorUsize::new(
+            if self.x < 0 {
+                (self.x * -1) as usize
+            } else {
+                self.x as usize
+            },
+            if self.y < 0 {
+                (self.y * -1) as usize
+            } else {
+                self.y as usize
+            },
+        )
     }
 }
 impl Add for CoorIsize {
@@ -175,7 +249,30 @@ impl Div<CoorUsize> for CoorIsize {
         Some(CoorIsize::new(new_x, new_y))
     }
 }
-
+impl Mul<isize> for CoorIsize {
+    type Output = Option<Self>;
+    fn mul(self, other: isize) -> Self::Output {
+        let Some(new_x) = self.x.checked_mul(other) else {
+            return None;
+        };
+        let Some(new_y) = self.y.checked_mul(other) else {
+            return None;
+        };
+        Some(CoorIsize::new(new_x, new_y))
+    }
+}
+impl Div<isize> for CoorIsize {
+    type Output = Option<Self>;
+    fn div(self, other: isize) -> Self::Output {
+        let Some(new_x) = self.x.checked_div(other) else {
+            return None;
+        };
+        let Some(new_y) = self.y.checked_div(other) else {
+            return None;
+        };
+        Some(CoorIsize::new(new_x, new_y))
+    }
+}
 pub fn debug(text: &str, is_overwrite: bool) {
     if is_overwrite {
         let mut file = OpenOptions::new()

@@ -12,7 +12,11 @@ use smallvec::SmallVec;
 
 use crate::{
     game_tools::{CoorIsize, CoorUsize, OptionTUI},
-    little_life_sim::{Creature, DietaryCategories, Gender, Specie, TrophicLevel},
+    little_life_sim::{
+        Creature, DietaryCategories,
+        Gender::{self, Nonbinary},
+        Specie, TrophicLevel,
+    },
 };
 
 mod config;
@@ -169,7 +173,7 @@ fn main() {
 
     let mut rng = rand::rng();
     let mut id_generator = little_life_sim::IdGenerator::new();
-    let mut sim_map = gen_map::GameMap::new(50, 50);
+    let mut sim_map = gen_map::GameMap::new(10, 10);
     let mut all_species: SmallVec<[Specie; 3]> = SmallVec::new();
     let mut all_creature_data: Vec<Creature> = Vec::new();
     let mut all_empty_place: Vec<CoorUsize> = Vec::with_capacity(sim_map.width * sim_map.height);
@@ -183,90 +187,114 @@ fn main() {
         0,
         100,
         100,
+        60,
+        3,
+        7,
+        '󱩡',
         TrophicLevel::Primary,
         DietaryCategories::Herbivorous,
-        '󱩡',
-        3,
-        50,
         &mut id_generator,
     ));
     all_species.push(little_life_sim::Specie::new(
         1,
         300,
         300,
+        200,
+        5,
+        9,
+        '',
         TrophicLevel::Secondary,
         DietaryCategories::Carnivorous,
-        '',
-        5,
-        70,
         &mut id_generator,
     ));
     all_species.push(little_life_sim::Specie::new(
         1,
         0,
         100,
+        1000,
+        0,
+        0,
+        '󱔐',
         TrophicLevel::Producer,
         DietaryCategories::NotApplicable,
-        '󱔐',
-        0,
-        0,
         &mut id_generator,
     ));
 
     // auto create Creatures
 
-    for s in all_species.iter() {
-        let mut max = 10;
-        if s.trophic_level == TrophicLevel::Producer {
-            max = 100;
-        } else {
-            max = 10;
-        }
-        for _ in 0..max {
-            let Some(new_coor) = all_empty_place.choose(&mut rng).cloned() else {
-                break;
-            };
-            let Ok(new_creature) =
-                Creature::new(&s, &mut sim_map, new_coor, Gender::Nonbinary, 1000)
-            else {
-                continue;
-            };
-            all_creature_data.push(new_creature);
-            all_empty_place.retain(|c| *c != new_coor);
-        }
-    }
+    // for s in all_species.iter() {
+    //     let mut max = 10;
+    //     if s.trophic_level == TrophicLevel::Producer {
+    //         max = 100;
+    //     } else {
+    //         max = 10;
+    //     }
+    //     for _ in 0..max {
+    //         let Some(new_coor) = all_empty_place.choose(&mut rng).cloned() else {
+    //             break;
+    //         };
+    //         let Ok(new_creature) = Creature::new(&s, &mut sim_map, new_coor, Gender::Nonbinary)
+    //         else {
+    //             continue;
+    //         };
+    //         all_creature_data.push(new_creature);
+    //         all_empty_place.retain(|c| *c != new_coor);
+    //     }
+    // }
+    // sim_map.show_map_without_case();
+    all_creature_data.push(
+        Creature::new(
+            &all_species[1],
+            &mut sim_map,
+            CoorUsize::new(3, 7),
+            Nonbinary,
+        )
+        .unwrap(),
+    );
+    all_creature_data.push(
+        Creature::new(
+            &all_species[1],
+            &mut sim_map,
+            CoorUsize::new(5, 2),
+            Nonbinary,
+        )
+        .unwrap(),
+    );
+    all_creature_data.push(
+        Creature::new(
+            &all_species[1],
+            &mut sim_map,
+            CoorUsize::new(1, 1),
+            Nonbinary,
+        )
+        .unwrap(),
+    );
+    let poor_tester = Creature::new(
+        &all_species[0],
+        &mut sim_map,
+        CoorUsize::new(5, 5),
+        Nonbinary,
+    )
+    .unwrap();
+    all_creature_data.push(poor_tester.clone());
     sim_map.show_map_without_case();
     let ref_creatures_data: Vec<&Creature> = all_creature_data.iter().collect();
     let ref_species_data: Vec<&Specie> = all_species.iter().collect();
     game_tools::debug("", true);
-    for i in all_creature_data.iter() {
-        game_tools::debug(
-            &format!(
-                "{} : {} {}\n",
-                all_species[i.sid as usize].icon, i.pos.y, i.pos.x
-            ),
-            false,
-        );
-        if let Some(cs) = i.scan_area(
-            &sim_map,
-            &ref_creatures_data,
-            if all_species[i.sid as usize].detect_positive_range
-                > all_species[i.sid as usize].detect_negative_range
-            {
-                all_species[i.sid as usize].detect_positive_range
-            } else {
-                all_species[i.sid as usize].detect_negative_range
-            },
-        ) {
-            if let Some(result) = i.get_food_place(&cs, &ref_species_data) {
-                for c in result {
-                    game_tools::debug(&format!("\t{} {}\n", c.y, c.x), false);
-                }
-            } else {
-                game_tools::debug("\tNone\n", false);
-            };
-        } else {
-            game_tools::debug("\tNone\n", false);
+    let mut counter = 0;
+    let total_loop = 10;
+    for _ in 0..total_loop {
+        for _ in 0..100 {
+            let result = poor_tester.scan_step_where(
+                &ref_creatures_data,
+                &ref_species_data,
+                sim_map.width,
+                sim_map.height,
+            );
+            if result != CoorIsize::new(1, 1) {
+                counter += 1;
+            }
         }
     }
+    println!("{}", counter as f32 / total_loop as f32);
 }
