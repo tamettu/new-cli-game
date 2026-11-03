@@ -160,9 +160,9 @@ impl Creature {
             (Some(a), Some(b)) => {
                 game_tools::debug("a b", true);
                 let is_left_too_tight = (a.pos.to_coor_isize() * -1)
-                    .and_then(|c| c + self.pos)
+                    .and_then(|c| c + self.pos.to_coor_isize())
                     .and_then(|c| Some(c.x < range as isize && c.y < range as isize));
-                let is_right_too_tight = (b.pos.to_coor_isize() + self.pos)
+                let is_right_too_tight = (b.pos.to_coor_isize() + self.pos.to_coor_isize())
                     .and_then(|c| Some(c.x < range as isize && c.y < range as isize));
 
                 if is_left_too_tight.is_some_and(|c| c) && is_right_too_tight.is_some_and(|c| c) {
@@ -178,7 +178,7 @@ impl Creature {
             (Some(a), None) => {
                 game_tools::debug("a", true);
                 let is_left_too_tight = (a.pos.to_coor_isize() * -1)
-                    .and_then(|c| c + self.pos)
+                    .and_then(|c| c + self.pos.to_coor_isize())
                     .and_then(|c| Some(c.x < range as isize && c.y < range as isize));
                 if is_left_too_tight.is_some_and(|c| c) {
                     return self.scan_area_when_dense(
@@ -192,7 +192,7 @@ impl Creature {
             }
             (None, Some(b)) => {
                 game_tools::debug("b", true);
-                let is_right_too_tight = (b.pos.to_coor_isize() + self.pos)
+                let is_right_too_tight = (b.pos.to_coor_isize() + self.pos.to_coor_isize())
                     .and_then(|c| Some(c.x < range as isize && c.y < range as isize));
 
                 if is_right_too_tight.is_some_and(|c| c) {
