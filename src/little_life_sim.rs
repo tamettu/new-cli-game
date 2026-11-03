@@ -38,6 +38,16 @@ pub enum TrophicLevel {
     Secondary,
     Top,
 }
+impl TrophicLevel {
+    pub fn get_die_rate(&self) -> u8 {
+        match self {
+            TrophicLevel::Producer => 45,
+            TrophicLevel::Primary => 70,
+            TrophicLevel::Secondary => 84,
+            TrophicLevel::Top => 15,
+        }
+    }
+}
 #[derive(Clone, Copy)]
 pub struct Specie {
     sid: u8,
@@ -102,10 +112,21 @@ impl Creature {
             return Err(());
         }
         area.change_str_map_val(&pos, &specie.icon.to_string());
-        let hp_left = specie.max_hp;
-        let speed = specie.max_speed;
-        let energy_left = specie.max_energy;
-        let mating_cold_down = specie.max_mating_cold_down;
+        let random_debuff = |original_value: usize| -> usize {
+            let temp = original_value - rand::random_range(0..=original_value);
+            if temp == 0 && rand::random_range(0..=100) < specie.trophic_level.get_die_rate() {
+                0
+            } else if temp != 0 {
+                temp
+            } else {
+                original_value - rand::random_range(0..((original_value / 3) + 1))
+            }
+        };
+        let hp_left = random_debuff(specie.max_hp);
+        let speed = random_debuff(specie.max_speed);
+        let energy_left = random_debuff(specie.max_energy);
+        let mating_cold_down = specie.max_mating_cold_down
+            - rand::random_range((specie.max_mating_cold_down / 2)..=specie.max_mating_cold_down);
         let sid = specie.get_sid();
         Ok(Creature {
             sid,
