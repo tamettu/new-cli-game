@@ -119,14 +119,20 @@ impl Creature {
             } else if temp != 0 {
                 temp
             } else {
-                original_value - rand::random_range(0..((original_value / 3) + 1))
+                original_value - rand::random_range(0..((original_value / 2) + 1))
             }
         };
         let hp_left = random_debuff(specie.max_hp);
-        let speed = random_debuff(specie.max_speed);
+        let speed = (specie.max_speed as f32 * rand::random_range(0.0..=1.0)) as usize;
         let energy_left = random_debuff(specie.max_energy);
-        let mating_cold_down = specie.max_mating_cold_down
-            - rand::random_range((specie.max_mating_cold_down / 2)..=specie.max_mating_cold_down);
+        let mating_cold_down = if specie.max_mating_cold_down < 1 {
+            0
+        } else {
+            specie.max_mating_cold_down
+                - rand::random_range(
+                    (specie.max_mating_cold_down / 2)..=specie.max_mating_cold_down,
+                )
+        };
         let sid = specie.get_sid();
         Ok(Creature {
             sid,
@@ -435,7 +441,7 @@ impl Creature {
             all_species[self.sid as usize].detect_negative_range
         };
         let Some(all_local_creatures) =
-            self.scan_area_leader(map_width, map_height, all_creature_place, longer_range)
+            self.scan_area_when_dense(map_width, map_height, all_creature_place, longer_range)
         else {
             return CoorIsize::new(
                 rand::random_range(-1_i8..2_i8) as isize,
@@ -500,10 +506,18 @@ impl Creature {
                     }
                 }
 
-                CoorIsize::new(
+                let final_move = CoorIsize::new(
                     ((all_vector.x) > (0)) as isize - ((all_vector.x) < (0)) as isize,
                     ((all_vector.y) > (0)) as isize - ((all_vector.y) < (0)) as isize,
-                )
+                );
+                if final_move == CoorIsize::new(0, 0) {
+                    CoorIsize::new(
+                        rand::random_range(-1..2_i8) as isize,
+                        rand::random_range(-1..2_i8) as isize,
+                    )
+                } else {
+                    final_move
+                }
             }
             _ => CoorIsize::new(
                 rand::random_range(-1_i8..2_i8) as isize,

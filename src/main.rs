@@ -283,18 +283,19 @@ fn main() {
     game_tools::debug("", true);
     let mut counter = 0;
     let total_loop = 10;
-    for _ in 0..total_loop {
-        for _ in 0..100 {
-            let result = poor_tester.scan_step_where(
-                &ref_creatures_data,
-                &ref_species_data,
-                sim_map.width,
-                sim_map.height,
-            );
-            if result != CoorIsize::new(1, 1) {
-                counter += 1;
-            }
-        }
-    }
-    println!("{}", counter as f32 / total_loop as f32);
+    // for _ in 0..total_loop {
+    //     for _ in 0..100 {
+    let result = poor_tester.scan_step_where(
+        &ref_creatures_data,
+        &ref_species_data,
+        sim_map.width,
+        sim_map.height,
+    );
+    println!("{} {}", result.x, result.y);
+    //         if result != CoorIsize::new(1, 1) {
+    //             counter += 1;
+    //         }
+    //     }
+    // }
+    // println!("{}", counter as f32 / total_loop as f32);
 }
