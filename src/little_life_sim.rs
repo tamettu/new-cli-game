@@ -1,9 +1,12 @@
+use rand::seq::IndexedRandom;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use rayon::slice::ParallelSliceMut;
+use smallvec::SmallVec;
 
+use crate::config::WIDTH_TIMES;
 use crate::game_tools::CoorUsize;
 use crate::game_tools::{self, CoorIsize};
-use crate::gen_map;
+use crate::gen_map::{self, GameMap};
 use std::collections::HashMap;
 pub struct IdGenerator {
     curr_id: u8,
@@ -108,30 +111,39 @@ impl Creature {
         pos: game_tools::CoorUsize,
         gender: Gender,
     ) -> Result<Self, ()> {
-        if area.get_str_map_val(&pos) != " " {
-            return Err(());
-        }
         area.change_str_map_val(&pos, &specie.icon.to_string());
         let random_debuff = |original_value: usize| -> usize {
-            let temp = original_value - rand::random_range(0..=original_value);
-            if temp == 0 && rand::random_range(0..=100) < specie.trophic_level.get_die_rate() {
-                0
-            } else if temp != 0 {
-                temp
-            } else {
-                original_value - rand::random_range(0..((original_value / 2) + 1))
+            if original_value == 0 {
+                return 0;
+            }
+            match rand::random_range(0_u8..3) {
+                0 => (original_value as f32 * rand::random_range(0.8..=1.0)) as usize,
+                1 => (original_value as f32 * rand::random_range(0.5..=0.7)) as usize,
+                2 => (original_value as f32 * rand::random_range(0.0..=0.4)) as usize,
+                _ => 10000000,
             }
         };
-        let hp_left = random_debuff(specie.max_hp);
-        let speed = (specie.max_speed as f32 * rand::random_range(0.0..=1.0)) as usize;
-        let energy_left = random_debuff(specie.max_energy);
-        let mating_cold_down = if specie.max_mating_cold_down < 1 {
-            0
+        let (
+            hp_left, //jump to next line you ass lsp
+            speed,
+            energy_left,
+            mating_cold_down,
+        ) = if rand::random_range(0..=100) //jump to next line you ass lsp
+            < specie.trophic_level.get_die_rate()
+        {
+            (0, 0, 0, 0)
         } else {
-            specie.max_mating_cold_down
-                - rand::random_range(
-                    (specie.max_mating_cold_down / 2)..=specie.max_mating_cold_down,
-                )
+            (
+                random_debuff(specie.max_hp),
+                random_debuff(specie.max_speed),
+                random_debuff(specie.max_energy),
+                if specie.max_mating_cold_down < 1 {
+                    0
+                } else {
+                    (specie.max_mating_cold_down as f32 //jump to next line you ass lsp
+                    * rand::random_range(0.5..=1.0)) as usize
+                },
+            )
         };
         let sid = specie.get_sid();
         Ok(Creature {
@@ -154,7 +166,7 @@ impl Creature {
     pub fn is_dead(&self) -> bool {
         self.hp_left == 0
     }
-
+    pub fn mating(&self,all_kinds: &[&Creature], map: &gen_map::GameMap,all_species: &mut [&Specie]){}
     pub fn is_target_in_range(&self, target_coor: CoorUsize, range: usize) -> bool {
         let is_y_in_range = (target_coor.y > self.pos.y && target_coor.y - self.pos.y <= range)
             || (target_coor.y <= self.pos.y && self.pos.y - target_coor.y <= range);
@@ -169,83 +181,117 @@ impl Creature {
         &self,
         map_width: usize,
         map_height: usize,
-        all_creature_place: &[&'a Creature],
+        sort_creatures: &[&'a Creature],
         range: usize,
     ) -> Option<Vec<&'a Creature>> {
-        let mut sort_creatures: Vec<&Creature> = all_creature_place.iter().copied().collect();
-        sort_creatures.par_sort_unstable_by_key(|c| c.pos);
         let index_sort_creatures: HashMap<CoorUsize, usize> = sort_creatures
             .iter()
             .enumerate()
             .map(|(i, &c)| (c.pos, i))
             .collect();
         let self_index = index_sort_creatures.get(&self.pos).unwrap();
-        let range_1d = (range * map_width + range) / 2;
-        let left_side = (self_index.checked_sub(range_1d)).and_then(|c| sort_creatures.get(c));
-        let right_side = (self_index.checked_add(range_1d)).and_then(|c| sort_creatures.get(c));
-        match (left_side, right_side) {
+        let half_range_1d = (range * map_width + range) / 3;
+        let is_left_too_tight = (self_index.checked_sub(half_range_1d))
+            .and_then(|c| sort_creatures.get(c))
+            .and_then(|c| c.pos.to_coor_isize() * -1)
+            .and_then(|c| c + self.pos.to_coor_isize())
+            .and_then(|c| Some(c.abs_usize(self.pos)))
+            .and_then(|c| {
+                println!("{} {}", c.x, c.y);
+                Some(c.x >= range / 3 && c.y >= range / 3)
+            });
+        let is_right_too_tight = (self_index.checked_add(half_range_1d))
+            .and_then(|c| sort_creatures.get(c))
+            .and_then(|c| c.pos + self.pos)
+            .and_then(|c| Some(c.abs_usize(self.pos)))
+            .and_then(|c| {
+                println!("{} {}", c.x, c.y);
+                Some(c.x >= range / 3 && c.y >= range / 3)
+            });
+
+        match (is_left_too_tight, is_right_too_tight) {
+            // ========= Both left and right have stuffs =========
             (Some(a), Some(b)) => {
-                game_tools::debug("a b", true);
-                let is_left_too_tight = (a.pos.to_coor_isize() * -1)
-                    .and_then(|c| c + self.pos.to_coor_isize())
-                    .and_then(|c| Some(c.x < range as isize && c.y < range as isize));
-                let is_right_too_tight = (b.pos.to_coor_isize() + self.pos.to_coor_isize())
-                    .and_then(|c| Some(c.x < range as isize && c.y < range as isize));
-
-                if is_left_too_tight.is_some_and(|c| c) && is_right_too_tight.is_some_and(|c| c) {
-                    return self.scan_area_when_dense(
-                        map_width,
-                        map_height,
-                        all_creature_place,
-                        range,
-                    );
+                if a && b {
+                    game_tools::debug(&format!("a {a} b {b} | dense\n"), true);
+                    self.scan_area_when_dense(map_width, map_height, sort_creatures, range)
+                } else {
+                    game_tools::debug(&format!("a {a} b {b} | sparse\n"), true);
+                    self.scan_area_when_sparse(sort_creatures, &index_sort_creatures, range)
                 }
-                self.scan_area_when_sparse(map_width, &sort_creatures, &index_sort_creatures, range)
             }
+            // ========= Only left have stuffs =========
             (Some(a), None) => {
-                game_tools::debug("a", true);
-                let is_left_too_tight = (a.pos.to_coor_isize() * -1)
-                    .and_then(|c| c + self.pos.to_coor_isize())
-                    .and_then(|c| Some(c.x < range as isize && c.y < range as isize));
-                if is_left_too_tight.is_some_and(|c| c) {
-                    return self.scan_area_when_dense(
-                        map_width,
-                        map_height,
-                        all_creature_place,
-                        range,
-                    );
+                if a {
+                    game_tools::debug("a | dense\n", true);
+                    self.scan_area_when_dense(map_width, map_height, sort_creatures, range)
+                } else {
+                    game_tools::debug("a | sparse\n", true);
+                    self.scan_area_when_sparse(&sort_creatures, &index_sort_creatures, range)
                 }
-                self.scan_area_when_sparse(map_width, &sort_creatures, &index_sort_creatures, range)
             }
+            // ========= Only right have stuffs =========
             (None, Some(b)) => {
-                game_tools::debug("b", true);
-                let is_right_too_tight = (b.pos.to_coor_isize() + self.pos.to_coor_isize())
-                    .and_then(|c| Some(c.x < range as isize && c.y < range as isize));
-
-                if is_right_too_tight.is_some_and(|c| c) {
-                    return self.scan_area_when_dense(
-                        map_width,
-                        map_height,
-                        all_creature_place,
-                        range,
-                    );
+                game_tools::debug("b\n", true);
+                if b {
+                    game_tools::debug("b | dense\n", true);
+                    self.scan_area_when_dense(map_width, map_height, sort_creatures, range)
+                } else {
+                    game_tools::debug("b | sparse\n", true);
+                    self.scan_area_when_sparse(&sort_creatures, &index_sort_creatures, range)
                 }
-                self.scan_area_when_sparse(map_width, &sort_creatures, &index_sort_creatures, range)
             }
+            // ========= Nothings nearby =========
             _ => {
-                game_tools::debug("Na", true);
-                self.scan_area_when_sparse(map_width, &sort_creatures, &index_sort_creatures, range)
+                game_tools::debug("Na\n", true);
+                self.scan_area_when_sparse(&sort_creatures, &index_sort_creatures, range)
             }
         }
     }
     fn scan_area_when_sparse<'a>(
         &self,
-        map_width: usize,
-        sort_creatures: &Vec<&'a Creature>,
+        sort_creatures: &[&'a Creature],
         index_sort_creatures: &HashMap<CoorUsize, usize>,
         range: usize,
     ) -> Option<Vec<&'a Creature>> {
-        panic!()
+        let self_index = index_sort_creatures
+            .get(&self.pos)
+            .expect("Bro what the hell you didnt put your self inside!?");
+        let mut l_index = *self_index;
+        let mut r_index = *self_index;
+        let mut all_target: Vec<&Creature> = vec![];
+        loop {
+            if self.is_target_in_range(sort_creatures[l_index].pos, range) {
+                all_target.push(sort_creatures[l_index]);
+                if let Some(a) = l_index.checked_sub(1) {
+                    l_index = a;
+                } else {
+                    break;
+                }
+                continue;
+            }
+            break;
+        }
+        loop {
+            if self.is_target_in_range(sort_creatures[r_index].pos, range) {
+                all_target.push(sort_creatures[r_index]);
+                if let Some(a) = r_index
+                    .checked_add(1) //lsp duck off here
+                    .filter(|&a| a < sort_creatures.len())
+                {
+                    r_index = a;
+                } else {
+                    break;
+                }
+                continue;
+            }
+            break;
+        }
+        if all_target.is_empty() {
+            None
+        } else {
+            Some(all_target)
+        }
     }
     fn scan_vertical_line<'a>(
         map_width: usize,
@@ -298,7 +344,6 @@ impl Creature {
         for y in 1..=range {
             if let Some(top_y) = self.pos.y.checked_sub(y) {
                 let new_top_y_coor = CoorUsize::new(self.pos.x, top_y);
-
                 if let Some(&k) = all_creature_corr_and_creature.get(&new_top_y_coor) {
                     all_target_place.push(k);
                 };
@@ -342,7 +387,7 @@ impl Creature {
             DietaryCategories::Herbivorous => all_local_creatures
                 .par_iter()
                 .filter(|c| {
-                    let target_specie = &all_species[c.sid as usize];
+                    let target_sp  ecie = &all_species[c.sid as usize];
                     target_specie.trophic_level == TrophicLevel::Producer
                         && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
                 })
@@ -392,7 +437,8 @@ impl Creature {
             .par_iter()
             .filter(|c| {
                 c.sid == self.sid
-                    && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
+                && self //lsp don't move!
+                .is_target_in_range(c.pos, self_specie.detect_positive_range)
             })
             .map(|c| c.pos)
             .collect();
@@ -428,7 +474,7 @@ impl Creature {
 
     pub fn scan_step_where(
         &self,
-        all_creature_place: &[&Creature],
+        sorted_all_creature_place: &[&Creature],
         all_species: &[&Specie],
         map_width: usize,
         map_height: usize,
@@ -440,9 +486,12 @@ impl Creature {
         } else {
             all_species[self.sid as usize].detect_negative_range
         };
-        let Some(all_local_creatures) =
-            self.scan_area_when_dense(map_width, map_height, all_creature_place, longer_range)
-        else {
+        let Some(all_local_creatures) = self.scan_area_leader(
+            map_width,
+            map_height,
+            sorted_all_creature_place,
+            longer_range,
+        ) else {
             return CoorIsize::new(
                 rand::random_range(-1_i8..2_i8) as isize,
                 rand::random_range(-1_i8..2_i8) as isize,
@@ -526,12 +575,126 @@ impl Creature {
         }
     }
 }
-fn main(
-    weigth: usize,
-    heigth: usize,
-    inital_peaceful_life_number: usize,
-    peaceful_life_dietary_categorie_generate_time: f32,
-    peaceful_life_dietary_categorie_generate_percentage: f32,
-    inital_hostile_life_number: usize,
+pub fn main(
+    width: usize,
+    height: usize,
+    // inital_peaceful_life_number: usize,
+    // peaceful_life_dietary_categorie_generate_time: f32,
+    // peaceful_life_dietary_categorie_generate_percentage: f32,
+    // inital_hostile_life_number: usize,
 ) {
+    let mut rng = rand::rng();
+    let mut id_generator = IdGenerator::new();
+    let mut sim_map = gen_map::GameMap::new(width, height);
+    let mut all_species: SmallVec<[Specie; 3]> = SmallVec::new();
+    let mut all_creature_data: Vec<Creature> = Vec::new();
+    let mut all_empty_place: Vec<CoorUsize> = Vec::with_capacity(sim_map.width * sim_map.height);
+    for i in 0..sim_map.height {
+        for j in 0..sim_map.width {
+            let new_coor = CoorUsize::new(j, i);
+            all_empty_place.push(new_coor);
+        }
+    }
+    all_species.push(Specie::new(
+        0,
+        100,
+        100,
+        60,
+        3,
+        3,
+        '󱩡',
+        TrophicLevel::Primary,
+        DietaryCategories::Herbivorous,
+        &mut id_generator,
+    ));
+    all_species.push(Specie::new(
+        1,
+        300,
+        300,
+        200,
+        5,
+        9,
+        '',
+        TrophicLevel::Secondary,
+        DietaryCategories::Carnivorous,
+        &mut id_generator,
+    ));
+    all_species.push(Specie::new(
+        1,
+        0,
+        100,
+        1000,
+        0,
+        0,
+        '󱔐',
+        TrophicLevel::Producer,
+        DietaryCategories::NotApplicable,
+        &mut id_generator,
+    ));
+
+    // auto create Creatures
+
+    // for s in all_species.iter() {
+    //     let mut max = 10;
+    //     if s.trophic_level == TrophicLevel::Producer {
+    //         max = 100;
+    //     } else {
+    //         max = 10;
+    //     }
+    // for _ in 0..max {
+    //     let Some(new_coor) = all_empty_place.choose(&mut rng).cloned() else {
+    //         break;
+    //     };
+    //     let Ok(new_creature) = Creature::new(&s, &mut sim_map, new_coor, Gender::Nonbinary)
+    //     else {
+    //         continue;
+    //     };
+    //     all_creature_data.push(new_creature);
+    //     all_empty_place.retain(|c| *c != new_coor);
+    // }
+    // }
+    // sim_map.show_map_without_case();
+    for _ in 0..50 {
+        let Some(new_coor) = all_empty_place.choose(&mut rng).cloned() else {
+            break;
+        };
+        let Ok(new_creature) =
+            Creature::new(&all_species[1], &mut sim_map, new_coor, Gender::Nonbinary)
+        else {
+            continue;
+        };
+        all_creature_data.push(new_creature);
+        all_empty_place.retain(|c| *c != new_coor);
+    }
+
+    let poor_tester = Creature::new(
+        &all_species[0],
+        &mut sim_map,
+        CoorUsize::new(5, 5),
+        Gender::Nonbinary,
+    )
+    .unwrap();
+    all_creature_data.push(poor_tester.clone());
+    sim_map.show_map();
+    let mut ref_creatures_data: Vec<&Creature> = all_creature_data.iter().collect();
+    ref_creatures_data.sort_unstable_by_key(|c| c.pos);
+    let ref_species_data: Vec<&Specie> = all_species.iter().collect();
+    game_tools::debug("", true);
+    // let mut counter = 0;
+    // let total_loop = 10;
+    // for _ in 0..total_loop {
+    //     for _ in 0..100 {
+    let result = poor_tester.scan_step_where(
+        &ref_creatures_data,
+        &ref_species_data,
+        sim_map.width,
+        sim_map.height,
+    );
+    println!("{} {}", result.x, result.y);
+    //         if result != CoorIsize::new(1, 1) {
+    //             counter += 1;
+    //         }
+    //     }
+    // }
+    // println!("{}", counter as f32 / total_loop as f32);
 }

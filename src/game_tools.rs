@@ -32,10 +32,10 @@ impl CoorUsize {
     pub fn to_coor_isize(&self) -> CoorIsize {
         CoorIsize::new(self.x as isize, self.y as isize)
     }
-    pub fn abs_isize(&self, other: CoorIsize) -> CoorUsize {
-        return CoorUsize::new(
-            other.x.abs_diff(self.x as isize),
-            other.y.abs_diff(self.y as isize),
+    pub fn abs_isize(&self, other: CoorIsize) -> CoorIsize {
+        return CoorIsize::new(
+            other.x.abs_diff(self.x as isize) as isize,
+            other.y.abs_diff(self.y as isize) as isize,
         );
     }
     pub fn abs_usize(&self, other: CoorUsize) -> CoorUsize {
