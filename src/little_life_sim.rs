@@ -645,8 +645,25 @@ impl Creature {
         new_pos: CoorUsize,
     ) {
         self.pos = new_pos;
+        self.energy_left -= 1;
         map.change_str_map_val(&new_pos, config::EMPTY_ICON);
         all_creature_place.retain(|&c| c.pos != self.pos);
+    }
+    pub fn eat(
+        &mut self,
+        map: &mut gen_map::GameMap,
+        all_creature_place: &mut Vec<Creature>,
+        target_coor: CoorUsize,
+    ) {
+        self.energy_left -= 1;
+        map.change_str_map_val(&target_coor, config::EMPTY_ICON);
+        let target_energy = all_creature_place
+            .par_iter()
+            .find_any(|c| c.pos == target_coor)
+            .map(|c| c.energy_left)
+            .unwrap();
+        all_creature_place.retain(|c| c.pos != target_coor);
+        self.energy_left += target_energy / 2;
     }
     pub fn update(
         &mut self,
