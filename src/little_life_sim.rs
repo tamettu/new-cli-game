@@ -9,6 +9,14 @@ use crate::game_tools::{self, CoorIsize};
 use crate::gen_map::{self, GameMap};
 use crate::little_life_sim::Gender::{Male, Nonbinary};
 use std::collections::{HashMap, HashSet};
+pub enum Movement {
+    Eat(CoorUsize),
+    Atk(CoorUsize),
+    WalkTo(CoorUsize),
+    MakeNewBabyTo(CoorUsize),
+    DeadAt(CoorUsize),
+}
+
 pub struct IdGenerator {
     curr_id: u8,
 }
@@ -630,18 +638,28 @@ impl Creature {
             ),
         }
     }
+    pub fn walk(
+        &mut self,
+        map: &mut gen_map::GameMap,
+        all_creature_place: &mut Vec<Creature>,
+        new_pos: CoorUsize,
+    ) {
+        self.pos = new_pos;
+        map.change_str_map_val(&new_pos, config::EMPTY_ICON);
+        all_creature_place.retain(|&c| c.pos != self.pos);
+    }
     pub fn update(
         &mut self,
         all_species: &[&Specie],
-        map: &mut gen_map::GameMap,
+        map: &gen_map::GameMap,
         sort_creatures: &[&Creature],
-    ) {
+    ) -> Option<Movement> {
         if self.is_dead() {
-            return;
+            return None;
         }
         if self.step_cd != 0 {
             self.step_cd -= 1;
-            return;
+            return None;
         }
         let hp_left_percent = 1 - (self.hp_left / all_species[self.sid as usize].max_hp) * 10;
         let energy_left_percent =
@@ -659,7 +677,11 @@ impl Creature {
                 + self.pos.to_coor_isize())
             .and_then(|c| Some(c.to_coor_usize()))
             .filter(|c| c.x < map.width && c.y < map.height)
-        {}
+            .filter(|c| map.get_str_map_val(c) == config::EMPTY_ICON)
+        {
+            return Some(Movement::WalkTo(walk_this_way));
+        }
+        todo!()
     }
 }
 pub fn main(
@@ -721,6 +743,18 @@ pub fn main(
 
     // auto create Creatures
 
+    // scan_area_leader(
+    //     map.width,
+    //     map.height,
+    //     sort_creatures,
+    //     if all_species[self.sid as usize].detect_positive_range
+    //         > all_species[self.sid as usize].detect_negative_range
+    //     {
+    //         all_species[self.sid as usize].detect_positive_range
+    //     } else {
+    //         all_species[self.sid as usize].detect_negative_range
+    //     },
+    // );
     // for s in all_species.iter() {
     //     let mut max = 10;
     //     if s.trophic_level == TrophicLevel::P99roducer {
