@@ -169,16 +169,15 @@ impl Creature {
         }
     }
     pub fn get_hurt(&mut self, damage: usize) {
-        if !(damage >= self.hp_left) {
-            self.hp_left -= damage;
+        if self.is_dead() {
             return;
         }
-        self.hp_left = 0;
+        self.hp_left -= 1;
     }
     fn is_dead(&self) -> bool {
         self.hp_left == 0
     }
-    fn mating(
+    pub fn mating(
         &self,
         all_creature_place: &mut Vec<Creature>,
         all_kinds: &HashSet<&CoorUsize>,
@@ -689,6 +688,9 @@ impl Creature {
             self.energy_left -= 1;
             self.hp_left += 1;
         }
+
+        // here walk or mating or other thing
+
         if let Some(walk_this_way) =
             (self.scan_step_where(sort_creatures, all_species, map.width, map.height)
                 + self.pos.to_coor_isize())
