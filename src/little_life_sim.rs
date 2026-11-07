@@ -3,11 +3,12 @@ use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIter
 use rayon::slice::ParallelSliceMut;
 use smallvec::SmallVec;
 
-use crate::config::WIDTH_TIMES;
+use crate::config::{self, WIDTH_TIMES};
 use crate::game_tools::CoorUsize;
 use crate::game_tools::{self, CoorIsize};
 use crate::gen_map::{self, GameMap};
-use std::collections::HashMap;
+use crate::little_life_sim::Gender::{Male, Nonbinary};
+use std::collections::{HashMap, HashSet};
 pub struct IdGenerator {
     curr_id: u8,
 }
@@ -101,8 +102,9 @@ pub struct Creature {
     pub gender: Gender,
     pub mating_cold_down: usize,
     pub energy_left: usize,
-    pub hp_left: usize,
-    pub speed: usize,
+    hp_left: usize,
+    speed: usize,
+    step_cd: usize,
 }
 impl Creature {
     pub fn new(
@@ -110,7 +112,7 @@ impl Creature {
         area: &mut gen_map::GameMap,
         pos: game_tools::CoorUsize,
         gender: Gender,
-    ) -> Result<Self, ()> {
+    ) -> Self {
         area.change_str_map_val(&pos, &specie.icon.to_string());
         let random_debuff = |original_value: usize| -> usize {
             if original_value == 0 {
@@ -146,7 +148,8 @@ impl Creature {
             )
         };
         let sid = specie.get_sid();
-        Ok(Creature {
+        let step_cd = rand::random_range(0..3);
+        Creature {
             sid,
             pos,
             gender,
@@ -154,7 +157,8 @@ impl Creature {
             energy_left,
             hp_left,
             speed,
-        })
+            step_cd,
+        }
     }
     pub fn get_hurt(&mut self, damage: usize) {
         if !(damage >= self.hp_left) {
@@ -163,11 +167,63 @@ impl Creature {
         }
         self.hp_left = 0;
     }
-    pub fn is_dead(&self) -> bool {
+    fn is_dead(&self) -> bool {
         self.hp_left == 0
     }
-    pub fn mating(&self,all_kinds: &[&Creature], map: &gen_map::GameMap,all_species: &mut [&Specie]){}
-    pub fn is_target_in_range(&self, target_coor: CoorUsize, range: usize) -> bool {
+    fn mating(
+        &self,
+        all_creature_place: &mut Vec<Creature>,
+        all_kinds: &HashSet<&CoorUsize>,
+        map: &mut gen_map::GameMap,
+        all_species: &[&Specie],
+    ) {
+        if self.gender == Male {
+            return;
+        }
+        let all_dir: [CoorIsize; 8] = [
+            CoorIsize::new(0, 1),
+            CoorIsize::new(0, -1),
+            CoorIsize::new(1, 0),
+            CoorIsize::new(-1, 0),
+            CoorIsize::new(1, 1),
+            CoorIsize::new(-1, -1),
+            CoorIsize::new(1, -1),
+            CoorIsize::new(-1, 1),
+        ];
+        let mut kind_dir = all_dir.len() + 1;
+        let mut empty_place = None;
+        for i in 0..all_dir.len() {
+            let Some(new_coor) = (self.pos.to_coor_isize() + all_dir[i])
+                .and_then(|c| Some(c.to_coor_usize()))
+                .filter(|c| c.x < map.width || c.y < map.height)
+            else {
+                continue;
+            };
+            if map.get_str_map_val(&new_coor) == config::EMPTY_ICON {
+                empty_place = Some(new_coor);
+            } else if all_kinds.contains(&new_coor) {
+                kind_dir = i;
+            }
+        }
+        if kind_dir > all_dir.len() || empty_place.is_none() {
+            return;
+        }
+        all_creature_place.push(Creature::new(
+            &all_species[self.sid as usize],
+            map,
+            empty_place.unwrap(),
+            if self.gender == Nonbinary {
+                Nonbinary
+            } else {
+                match rand::random_range(0_u8..2) {
+                    0 => Gender::Female,
+                    1 => Gender::Male,
+                    _ => Gender::Female,
+                }
+            },
+        ));
+    }
+    fn is_target_in_range(&self, target_coor: CoorUsize, range: usize) -> bool {
         let is_y_in_range = (target_coor.y > self.pos.y && target_coor.y - self.pos.y <= range)
             || (target_coor.y <= self.pos.y && self.pos.y - target_coor.y <= range);
 
@@ -387,7 +443,7 @@ impl Creature {
             DietaryCategories::Herbivorous => all_local_creatures
                 .par_iter()
                 .filter(|c| {
-                    let target_sp  ecie = &all_species[c.sid as usize];
+                    let target_specie = &all_species[c.sid as usize];
                     target_specie.trophic_level == TrophicLevel::Producer
                         && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
                 })
@@ -472,7 +528,7 @@ impl Creature {
         }
     }
 
-    pub fn scan_step_where(
+    fn scan_step_where(
         &self,
         sorted_all_creature_place: &[&Creature],
         all_species: &[&Specie],
@@ -574,6 +630,37 @@ impl Creature {
             ),
         }
     }
+    pub fn update(
+        &mut self,
+        all_species: &[&Specie],
+        map: &mut gen_map::GameMap,
+        sort_creatures: &[&Creature],
+    ) {
+        if self.is_dead() {
+            return;
+        }
+        if self.step_cd != 0 {
+            self.step_cd -= 1;
+            return;
+        }
+        let hp_left_percent = 1 - (self.hp_left / all_species[self.sid as usize].max_hp) * 10;
+        let energy_left_percent =
+            1 - (self.energy_left / all_species[self.sid as usize].max_energy) * 10;
+        self.step_cd = self.speed + hp_left_percent + energy_left_percent / 2;
+        if energy_left_percent <= 2 {
+            self.get_hurt(1);
+        }
+        if energy_left_percent >= 5 {
+            self.energy_left -= 1;
+            self.hp_left += 1;
+        }
+        if let Some(walk_this_way) =
+            (self.scan_step_where(sort_creatures, all_species, map.width, map.height)
+                + self.pos.to_coor_isize())
+            .and_then(|c| Some(c.to_coor_usize()))
+            .filter(|c| c.x < map.width && c.y < map.height)
+        {}
+    }
 }
 pub fn main(
     width: usize,
@@ -636,7 +723,7 @@ pub fn main(
 
     // for s in all_species.iter() {
     //     let mut max = 10;
-    //     if s.trophic_level == TrophicLevel::Producer {
+    //     if s.trophic_level == TrophicLevel::P99roducer {
     //         max = 100;
     //     } else {
     //         max = 10;
@@ -658,11 +745,8 @@ pub fn main(
         let Some(new_coor) = all_empty_place.choose(&mut rng).cloned() else {
             break;
         };
-        let Ok(new_creature) =
-            Creature::new(&all_species[1], &mut sim_map, new_coor, Gender::Nonbinary)
-        else {
-            continue;
-        };
+        let new_creature =
+            Creature::new(&all_species[1], &mut sim_map, new_coor, Gender::Nonbinary);
         all_creature_data.push(new_creature);
         all_empty_place.retain(|c| *c != new_coor);
     }
@@ -672,8 +756,7 @@ pub fn main(
         &mut sim_map,
         CoorUsize::new(5, 5),
         Gender::Nonbinary,
-    )
-    .unwrap();
+    );
     all_creature_data.push(poor_tester.clone());
     sim_map.show_map();
     let mut ref_creatures_data: Vec<&Creature> = all_creature_data.iter().collect();
