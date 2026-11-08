@@ -1,4 +1,7 @@
+use rayon::iter::IntoParallelIterator;
 use rayon::iter::IntoParallelRefIterator;
+use rayon::iter::IntoParallelRefMutIterator;
+use rayon::iter::ParallelExtend;
 use rayon::iter::ParallelIterator;
 
 use crate::config;
@@ -15,7 +18,7 @@ pub enum Movement {
     Atk,
     Walk,
     Mating,
-    Dead,
+    Gone,
 }
 pub struct ActorMovement {
     pub actor_pos: CoorUsize,
@@ -137,7 +140,42 @@ impl SimulationMap {
         )));
     }
     fn update(&mut self) {
-        let creatures = self.get_creatures_only();
-        let actions: Vec<ActorMovement> = Vec::with_capacity(creatures.len());
+        let ref_species: Vec<&Specie> = self.species.iter().collect();
+        self.creatures
+            .par_iter_mut()
+            .flatten()
+            .for_each(|c| c.update(&ref_species));
+        let mut creatures = self.get_creatures_only();
+        creatures.sort_unstable_by_key(|&c| c.pos);
+        let mut actions: Vec<ActorMovement> = Vec::with_capacity(creatures.len());
+        actions.par_extend(
+            creatures
+                .par_iter()
+                .filter_map(|&&c| c.get_movement(&ref_species, &self.sim_map, &creatures)),
+        );
+
+        // ======================================= //
+
+        let _ = actions.iter().for_each(|c| match c.action {
+            Movement::Eat => {
+                self.eat(c.actor_pos, c.target_pos.unwrap());
+            }
+            Movement::Atk => {
+                self.atk(c.actor_pos, c.target_pos.unwrap());
+            }
+            Movement::Walk => {
+                self.walk(c.actor_pos, c.target_pos.unwrap());
+            }
+            Movement::Mating => {
+                self.mating(c.actor_pos, c.target_pos.unwrap());
+            }
+            Movement::Gone => {
+                self.creatures
+                    .remove(c.actor_pos.to_index(self.sim_map.width));
+                self.sim_map
+                    .change_str_map_val(&c.actor_pos, config::EMPTY_ICON);
+            }
+            _ => (),
+        });
     }
 }

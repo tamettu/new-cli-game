@@ -7,7 +7,6 @@ use crate::little_life_sim::ActorMovement;
 use crate::little_life_sim::Movement::Walk;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
-use smallvec::SmallVec;
 use std::collections::HashMap;
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq)]
 pub enum DietaryCategories {
@@ -623,18 +622,16 @@ impl Creature {
             None
         }
     }
-    pub fn update(
-        &mut self,
-        all_species: &[&Specie],
-        map: &gen_map::GameMap,
-        sorted_creatures: &[&Creature],
-    ) -> Option<ActorMovement> {
+    pub fn update(&mut self, all_species: &[&Specie]) {
         if self.hp_left == 0 {
-            return None;
+            if self.energy_left != 0 {
+                self.energy_left -= 1
+            }
+            return;
         }
         if self.step_cd != 0 {
             self.step_cd -= 1;
-            return None;
+            return;
         }
         let hp_left_percent = 1 - (self.hp_left / all_species[self.sid as usize].max_hp) * 10;
         let energy_left_percent =
@@ -647,8 +644,23 @@ impl Creature {
             self.energy_left -= 1;
             self.hp_left += 1;
         }
-        // here walk or mating or other thing
-
+    }
+    pub fn get_movement(
+        &self,
+        all_species: &[&Specie],
+        map: &gen_map::GameMap,
+        sorted_creatures: &[&Creature],
+    ) -> Option<ActorMovement> {
+        if self.hp_left == 0 {
+            if self.energy_left == 0 {
+                return Some(ActorMovement::new(
+                    self.pos,
+                    crate::little_life_sim::Movement::Gone,
+                    None,
+                ));
+            }
+            return None;
+        }
         let longer_range = if all_species[self.sid as usize].detect_positive_range
             > all_species[self.sid as usize].detect_negative_range
         {
