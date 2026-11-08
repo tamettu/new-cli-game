@@ -1,6 +1,19 @@
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::ops::{Add, Div, Mul};
+pub struct IdGenerator {
+    curr_id: u8,
+}
+impl IdGenerator {
+    pub fn new() -> Self {
+        Self { curr_id: 0 }
+    }
+    pub fn gen_id(&mut self) -> u8 {
+        let id = self.curr_id;
+        self.curr_id += 1;
+        id
+    }
+}
 pub enum OptionTUI {
     Quit,
     Stop,
@@ -49,6 +62,9 @@ impl CoorUsize {
     }
     pub fn flatten(&self, total_width: usize) -> usize {
         self.y * total_width + self.x
+    }
+    pub fn to_index(&self, width: usize) -> usize {
+        self.y * width + self.x
     }
 }
 impl Add for CoorUsize {
@@ -172,6 +188,9 @@ impl CoorIsize {
                 self.y as usize
             },
         )
+    }
+    pub fn to_index(&self, width: isize) -> isize {
+        self.y * width + self.x
     }
 }
 impl Add for CoorIsize {

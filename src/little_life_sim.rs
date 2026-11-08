@@ -1,33 +1,147 @@
-use rand::seq::IndexedRandom;
-use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
-use rayon::slice::ParallelSliceMut;
-use smallvec::SmallVec;
-
-use crate::config::{self, WIDTH_TIMES};
+use crate::config::{self};
 use crate::game_tools::CoorUsize;
 use crate::game_tools::{self, CoorIsize};
-use crate::gen_map::{self, GameMap};
+use crate::gen_map::{self};
 use crate::little_life_sim::Gender::{Male, Nonbinary};
-use std::collections::{HashMap, HashSet};
-pub enum Movement {
-    Eat(CoorUsize),
-    Atk(CoorUsize),
-    WalkTo(CoorUsize),
-    MakeNewBabyTo(CoorUsize),
-    DeadAt(CoorUsize),
-}
+use rayon::iter::IntoParallelRefIterator;
+use rayon::iter::ParallelIterator;
+use smallvec::SmallVec;
+use std::collections::HashMap;
 
-pub struct IdGenerator {
-    curr_id: u8,
+pub struct SimulationMap {
+    pub sim_map: gen_map::GameMap,
+    creatures: Vec<Option<Creature>>,
+    species: Vec<Specie>,
 }
-impl IdGenerator {
-    pub fn new() -> Self {
-        Self { curr_id: 0 }
+impl SimulationMap {
+    pub fn new(width: usize, height: usize, species: Vec<Specie>) -> Self {
+        let sim_map = gen_map::GameMap::new(width, height);
+        let creatures = Vec::with_capacity(width * height);
+        SimulationMap {
+            sim_map,
+            creatures,
+
+            species,
+        }
     }
-    pub fn gen_id(&mut self) -> u8 {
-        let id = self.curr_id;
-        self.curr_id += 1;
-        id
+    fn get_creatures_only(&self) -> Vec<&Creature> {
+        self.creatures.par_iter().flatten().collect()
+    }
+    pub fn get_creature(&self, target_pos: CoorUsize) -> &Option<Creature> {
+        &self.creatures[target_pos.to_index(self.sim_map.width)]
+    }
+    pub fn walk(&mut self, actor_pos: CoorUsize, new_pos: CoorUsize) {
+        let Some(Some(actor)) = self
+            .creatures
+            .get_mut(actor_pos.to_index(self.sim_map.width))
+        else {
+            return;
+        };
+        self.sim_map
+            .change_str_map_val(&actor_pos, config::EMPTY_ICON);
+        actor.energy_left -= 1;
+        actor.pos = new_pos;
+        self.sim_map
+            .change_str_map_val(&new_pos, &self.species[actor.sid as usize].icon.to_string());
+    }
+    pub fn eat(&mut self, actor_pos: CoorUsize, target_coor: CoorUsize) {
+        let Some(target) = self.creatures[target_coor.to_index(self.sim_map.width)] else {
+            return;
+        };
+        let Some(Some(actor)) = self
+            .creatures
+            .get_mut(actor_pos.to_index(self.sim_map.width))
+        else {
+            return;
+        };
+        actor.energy_left -= 1;
+        self.sim_map
+            .change_str_map_val(&target_coor, config::EMPTY_ICON);
+        let total_energy_get = target.energy_left
+            * (0.1_f32.powf(
+                (self.species[actor.sid as usize].trophic_level as u8
+                    - self.species[target.sid as usize].trophic_level as u8) as f32,
+            )) as usize;
+        actor.energy_left += total_energy_get;
+    }
+    pub fn mating(
+        &mut self,
+        actor_pos: CoorUsize,
+        all_kinds: &Vec<&CoorUsize>,
+        all_species: &[&Specie],
+    ) {
+        let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)] else {
+            return;
+        };
+        if actor.gender == Male {
+            return;
+        }
+        let all_dir: [CoorIsize; 8] = [
+            CoorIsize::new(0, 1),
+            CoorIsize::new(0, -1),
+            CoorIsize::new(1, 0),
+            CoorIsize::new(-1, 0),
+            CoorIsize::new(1, 1),
+            CoorIsize::new(-1, -1),
+            CoorIsize::new(1, -1),
+            CoorIsize::new(-1, 1),
+        ];
+        let mut kind_dir = all_dir.len() + 1;
+        let mut empty_place = None;
+        for i in 0..all_dir.len() {
+            let Some(new_coor) = (actor_pos.to_coor_isize() + all_dir[i])
+                .and_then(|c| Some(c.to_coor_usize()))
+                .filter(|c| c.x < self.sim_map.width || c.y < self.sim_map.height)
+            else {
+                continue;
+            };
+            if self.sim_map.get_str_map_val(&new_coor) == config::EMPTY_ICON {
+                empty_place = Some(new_coor);
+            } else if all_kinds.contains(&&new_coor) {
+                kind_dir = i;
+            }
+        }
+        if kind_dir > all_dir.len() || empty_place.is_none() {
+            return;
+        }
+        self.creatures[actor_pos.to_index(self.sim_map.width)]
+            .unwrap()
+            .energy_left -= 1;
+        self.creatures.push(Some(Creature::new(
+            &all_species[actor.sid as usize],
+            &mut self.sim_map,
+            empty_place.unwrap(),
+            if actor.gender == Nonbinary {
+                Nonbinary
+            } else {
+                match rand::random_range(0_u8..2) {
+                    0 => Gender::Female,
+                    1 => Gender::Male,
+                    _ => Gender::Female,
+                }
+            },
+        )));
+    }
+}
+pub enum Movement {
+    Eat,
+    Atk,
+    Walk,
+    Mating,
+    Dead,
+}
+pub struct ActorMovement {
+    pub actor_pos: CoorUsize,
+    pub action: Movement,
+    pub target_pos: Option<CoorUsize>,
+}
+impl ActorMovement {
+    pub fn new(actor_pos: CoorUsize, action: Movement, target_pos: Option<CoorUsize>) -> Self {
+        ActorMovement {
+            actor_pos,
+            action,
+            target_pos,
+        }
     }
 }
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq)]
@@ -84,7 +198,7 @@ impl Specie {
         icon: char,
         trophic_level: TrophicLevel,
         dietarycategories: DietaryCategories,
-        id_generator: &mut IdGenerator,
+        id_generator: &mut game_tools::IdGenerator,
     ) -> Self {
         Specie {
             sid: id_generator.gen_id(),
@@ -172,63 +286,10 @@ impl Creature {
         if self.is_dead() {
             return;
         }
-        self.hp_left -= 1;
+        self.hp_left -= damage;
     }
     fn is_dead(&self) -> bool {
         self.hp_left == 0
-    }
-    pub fn mating(
-        &self,
-        all_creature_place: &mut Vec<Creature>,
-        all_kinds: &HashSet<&CoorUsize>,
-        map: &mut gen_map::GameMap,
-        all_species: &[&Specie],
-    ) {
-        if self.gender == Male {
-            return;
-        }
-        let all_dir: [CoorIsize; 8] = [
-            CoorIsize::new(0, 1),
-            CoorIsize::new(0, -1),
-            CoorIsize::new(1, 0),
-            CoorIsize::new(-1, 0),
-            CoorIsize::new(1, 1),
-            CoorIsize::new(-1, -1),
-            CoorIsize::new(1, -1),
-            CoorIsize::new(-1, 1),
-        ];
-        let mut kind_dir = all_dir.len() + 1;
-        let mut empty_place = None;
-        for i in 0..all_dir.len() {
-            let Some(new_coor) = (self.pos.to_coor_isize() + all_dir[i])
-                .and_then(|c| Some(c.to_coor_usize()))
-                .filter(|c| c.x < map.width || c.y < map.height)
-            else {
-                continue;
-            };
-            if map.get_str_map_val(&new_coor) == config::EMPTY_ICON {
-                empty_place = Some(new_coor);
-            } else if all_kinds.contains(&new_coor) {
-                kind_dir = i;
-            }
-        }
-        if kind_dir > all_dir.len() || empty_place.is_none() {
-            return;
-        }
-        all_creature_place.push(Creature::new(
-            &all_species[self.sid as usize],
-            map,
-            empty_place.unwrap(),
-            if self.gender == Nonbinary {
-                Nonbinary
-            } else {
-                match rand::random_range(0_u8..2) {
-                    0 => Gender::Female,
-                    1 => Gender::Male,
-                    _ => Gender::Female,
-                }
-            },
-        ));
     }
     fn is_target_in_range(&self, target_coor: CoorUsize, range: usize) -> bool {
         let is_y_in_range = (target_coor.y > self.pos.y && target_coor.y - self.pos.y <= range)
@@ -239,7 +300,6 @@ impl Creature {
 
         is_y_in_range && is_x_in_range
     }
-
     fn scan_area_leader<'a>(
         &self,
         map_width: usize,
@@ -637,33 +697,6 @@ impl Creature {
             ),
         }
     }
-    pub fn walk(
-        &mut self,
-        map: &mut gen_map::GameMap,
-        all_creature_place: &mut Vec<Creature>,
-        new_pos: CoorUsize,
-    ) {
-        self.pos = new_pos;
-        self.energy_left -= 1;
-        map.change_str_map_val(&new_pos, config::EMPTY_ICON);
-        all_creature_place.retain(|&c| c.pos != self.pos);
-    }
-    pub fn eat(
-        &mut self,
-        map: &mut gen_map::GameMap,
-        all_creature_place: &mut Vec<Creature>,
-        target_coor: CoorUsize,
-    ) {
-        self.energy_left -= 1;
-        map.change_str_map_val(&target_coor, config::EMPTY_ICON);
-        let target_energy = all_creature_place
-            .par_iter()
-            .find_any(|c| c.pos == target_coor)
-            .map(|c| c.energy_left)
-            .unwrap();
-        all_creature_place.retain(|c| c.pos != target_coor);
-        self.energy_left += target_energy / 2;
-    }
     pub fn update(
         &mut self,
         all_species: &[&Specie],
@@ -688,7 +721,6 @@ impl Creature {
             self.energy_left -= 1;
             self.hp_left += 1;
         }
-
         // here walk or mating or other thing
 
         if let Some(walk_this_way) =
@@ -698,7 +730,7 @@ impl Creature {
             .filter(|c| c.x < map.width && c.y < map.height)
             .filter(|c| map.get_str_map_val(c) == config::EMPTY_ICON)
         {
-            return Some(Movement::WalkTo(walk_this_way));
+            // return Some(Movement::WalkTo(walk_this_way));
         }
         todo!()
     }
@@ -712,7 +744,7 @@ pub fn main(
     // inital_hostile_life_number: usize,
 ) {
     let mut rng = rand::rng();
-    let mut id_generator = IdGenerator::new();
+    let mut id_generator = game_tools::IdGenerator::new();
     let mut sim_map = gen_map::GameMap::new(width, height);
     let mut all_species: SmallVec<[Specie; 3]> = SmallVec::new();
     let mut all_creature_data: Vec<Creature> = Vec::new();
@@ -759,78 +791,4 @@ pub fn main(
         DietaryCategories::NotApplicable,
         &mut id_generator,
     ));
-
-    // auto create Creatures
-
-    // scan_area_leader(
-    //     map.width,
-    //     map.height,
-    //     sort_creatures,
-    //     if all_species[self.sid as usize].detect_positive_range
-    //         > all_species[self.sid as usize].detect_negative_range
-    //     {
-    //         all_species[self.sid as usize].detect_positive_range
-    //     } else {
-    //         all_species[self.sid as usize].detect_negative_range
-    //     },
-    // );
-    // for s in all_species.iter() {
-    //     let mut max = 10;
-    //     if s.trophic_level == TrophicLevel::P99roducer {
-    //         max = 100;
-    //     } else {
-    //         max = 10;
-    //     }
-    // for _ in 0..max {
-    //     let Some(new_coor) = all_empty_place.choose(&mut rng).cloned() else {
-    //         break;
-    //     };
-    //     let Ok(new_creature) = Creature::new(&s, &mut sim_map, new_coor, Gender::Nonbinary)
-    //     else {
-    //         continue;
-    //     };
-    //     all_creature_data.push(new_creature);
-    //     all_empty_place.retain(|c| *c != new_coor);
-    // }
-    // }
-    // sim_map.show_map_without_case();
-    for _ in 0..50 {
-        let Some(new_coor) = all_empty_place.choose(&mut rng).cloned() else {
-            break;
-        };
-        let new_creature =
-            Creature::new(&all_species[1], &mut sim_map, new_coor, Gender::Nonbinary);
-        all_creature_data.push(new_creature);
-        all_empty_place.retain(|c| *c != new_coor);
-    }
-
-    let poor_tester = Creature::new(
-        &all_species[0],
-        &mut sim_map,
-        CoorUsize::new(5, 5),
-        Gender::Nonbinary,
-    );
-    all_creature_data.push(poor_tester.clone());
-    sim_map.show_map();
-    let mut ref_creatures_data: Vec<&Creature> = all_creature_data.iter().collect();
-    ref_creatures_data.sort_unstable_by_key(|c| c.pos);
-    let ref_species_data: Vec<&Specie> = all_species.iter().collect();
-    game_tools::debug("", true);
-    // let mut counter = 0;
-    // let total_loop = 10;
-    // for _ in 0..total_loop {
-    //     for _ in 0..100 {
-    let result = poor_tester.scan_step_where(
-        &ref_creatures_data,
-        &ref_species_data,
-        sim_map.width,
-        sim_map.height,
-    );
-    println!("{} {}", result.x, result.y);
-    //         if result != CoorIsize::new(1, 1) {
-    //             counter += 1;
-    //         }
-    //     }
-    // }
-    // println!("{}", counter as f32 / total_loop as f32);
 }
