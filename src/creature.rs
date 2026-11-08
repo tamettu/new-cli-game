@@ -1,33 +1,14 @@
 use crate::config::{self};
+use crate::creature::Gender::Male;
 use crate::game_tools::CoorUsize;
 use crate::game_tools::{self, CoorIsize};
 use crate::gen_map::{self};
+use crate::little_life_sim::ActorMovement;
+use crate::little_life_sim::Movement::Walk;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
 use smallvec::SmallVec;
 use std::collections::HashMap;
-
-pub enum Movement {
-    Eat,
-    Atk,
-    Walk,
-    Mating,
-    Dead,
-}
-pub struct ActorMovement {
-    pub actor_pos: CoorUsize,
-    pub action: Movement,
-    pub target_pos: Option<CoorUsize>,
-}
-impl ActorMovement {
-    pub fn new(actor_pos: CoorUsize, action: Movement, target_pos: Option<CoorUsize>) -> Self {
-        ActorMovement {
-            actor_pos,
-            action,
-            target_pos,
-        }
-    }
-}
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq)]
 pub enum DietaryCategories {
     Herbivorous,
@@ -108,8 +89,8 @@ pub struct Creature {
     pub gender: Gender,
     pub mating_cold_down: usize,
     pub energy_left: usize,
-    hp_left: usize,
-    speed: usize,
+    pub hp_left: usize,
+    pub speed: usize,
     step_cd: usize,
 }
 impl Creature {
@@ -165,15 +146,6 @@ impl Creature {
             speed,
             step_cd,
         }
-    }
-    pub fn get_hurt(&mut self, damage: usize) {
-        if self.is_dead() {
-            return;
-        }
-        self.hp_left -= damage;
-    }
-    fn is_dead(&self) -> bool {
-        self.hp_left == 0
     }
     fn is_target_in_range(&self, target_coor: CoorUsize, range: usize) -> bool {
         let is_y_in_range = (target_coor.y > self.pos.y && target_coor.y - self.pos.y <= range)
@@ -384,7 +356,7 @@ impl Creature {
         }
         Some(all_target_place)
     }
-    fn scan_local_food(
+    fn scan_local_eatable_animals(
         &self,
         all_local_creatures: &[&Creature],
         all_species: &[&Specie],
@@ -395,7 +367,8 @@ impl Creature {
                 .par_iter()
                 .filter(|c| {
                     let target_specie = &all_species[c.sid as usize];
-                    target_specie.trophic_level == TrophicLevel::Producer
+                    c.hp_left != 0
+                        && target_specie.trophic_level == TrophicLevel::Producer
                         && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
                 })
                 .map(|c| c.pos)
@@ -405,7 +378,8 @@ impl Creature {
                 .par_iter()
                 .filter(|c| {
                     let target_specie = &all_species[c.sid as usize];
-                    target_specie.trophic_level != TrophicLevel::Producer
+                    c.hp_left != 0
+                        && target_specie.trophic_level != TrophicLevel::Producer
                         && self.sid != c.sid
                         && (self_specie.trophic_level == TrophicLevel::Top
                             || target_specie.trophic_level < self_specie.trophic_level)
@@ -418,7 +392,61 @@ impl Creature {
                 .par_iter()
                 .filter(|c| {
                     let target_specie = &all_species[c.sid as usize];
-                    self.sid != c.sid
+                    c.hp_left != 0
+                        && self.sid != c.sid
+                        && (self_specie.trophic_level == TrophicLevel::Top
+                            || target_specie.trophic_level < self_specie.trophic_level)
+                        && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
+                })
+                .map(|c| c.pos)
+                .collect(),
+
+            _ => return None,
+        };
+        if all_food_coor.is_empty() {
+            None
+        } else {
+            Some(all_food_coor)
+        }
+    }
+    fn scan_local_food(
+        &self,
+        all_local_creatures: &[&Creature],
+        all_species: &[&Specie],
+    ) -> Option<Vec<CoorUsize>> {
+        let self_specie = &all_species[self.sid as usize];
+        let all_food_coor: Vec<CoorUsize> = match self_specie.dietarycategories {
+            DietaryCategories::Herbivorous => all_local_creatures
+                .par_iter()
+                .filter(|c| {
+                    let target_specie = &all_species[c.sid as usize];
+                    c.hp_left == 0
+                        && target_specie.trophic_level == TrophicLevel::Producer
+                        && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
+                })
+                .map(|c| c.pos)
+                .collect(),
+
+            DietaryCategories::Carnivorous => all_local_creatures
+                .par_iter()
+                .filter(|c| {
+                    let target_specie = &all_species[c.sid as usize];
+                    c.hp_left == 0
+                        && target_specie.trophic_level != TrophicLevel::Producer
+                        && self.sid != c.sid
+                        && (self_specie.trophic_level == TrophicLevel::Top
+                            || target_specie.trophic_level < self_specie.trophic_level)
+                        && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
+                })
+                .map(|c| c.pos)
+                .collect(),
+
+            DietaryCategories::Omnivorous => all_local_creatures
+                .par_iter()
+                .filter(|c| {
+                    let target_specie = &all_species[c.sid as usize];
+                    c.hp_left == 0
+                        && self.sid != c.sid
                         && (self_specie.trophic_level == TrophicLevel::Top
                             || target_specie.trophic_level < self_specie.trophic_level)
                         && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
@@ -443,6 +471,7 @@ impl Creature {
         let all_food_coor: Vec<CoorUsize> = all_local_creatures
             .par_iter()
             .filter(|c| {
+                c.hp_left != 0 &&
                 c.sid == self.sid
                 && self //lsp don't move!
                 .is_target_in_range(c.pos, self_specie.detect_positive_range)
@@ -465,9 +494,10 @@ impl Creature {
             .par_iter()
             .filter(|c| {
                 let target_specie = &all_species[c.sid as usize];
-                (target_specie.trophic_level > self_specie.trophic_level
-                    || (target_specie.trophic_level == TrophicLevel::Top
-                        && target_specie.trophic_level == self_specie.trophic_level))
+                c.hp_left != 0
+                    && (target_specie.trophic_level > self_specie.trophic_level
+                        || (target_specie.trophic_level == TrophicLevel::Top
+                            && target_specie.trophic_level == self_specie.trophic_level))
                     && self.is_target_in_range(c.pos, self_specie.detect_negative_range)
             })
             .map(|c| c.pos)
@@ -478,14 +508,147 @@ impl Creature {
             Some(all_food_coor)
         }
     }
-
-    fn scan_step_where(
+    fn get_nearby_creature(
         &self,
-        sorted_all_creature_place: &[&Creature],
+        target_list: &Vec<CoorUsize>,
+        map: &gen_map::GameMap,
+    ) -> Option<CoorUsize> {
+        if self.gender == Male || self.energy_left == 0 {
+            return None;
+        }
+
+        let all_dir: [CoorIsize; 8] = [
+            CoorIsize::new(0, 1),
+            CoorIsize::new(0, -1),
+            CoorIsize::new(1, 0),
+            CoorIsize::new(-1, 0),
+            CoorIsize::new(1, 1),
+            CoorIsize::new(-1, -1),
+            CoorIsize::new(1, -1),
+            CoorIsize::new(-1, 1),
+        ];
+        let all_dir_len = all_dir.len();
+        let mut target_dir = all_dir_len + 1;
+        for i in 0..all_dir_len {
+            let Some(new_coor) = (self.pos.to_coor_isize() + all_dir[i])
+                .and_then(|c| Some(c.to_coor_usize()))
+                .filter(|c| c.x < map.width || c.y < map.height)
+            else {
+                continue;
+            };
+            if target_list.contains(&new_coor) {
+                target_dir = i;
+            }
+        }
+        if target_dir > all_dir_len {
+            None
+        } else {
+            Some(target_list[target_dir])
+        }
+    }
+    fn get_nearby_space(&self, map: &gen_map::GameMap) -> Option<CoorUsize> {
+        if self.gender == Male || self.energy_left == 0 {
+            return None;
+        }
+
+        let all_dir: [CoorIsize; 8] = [
+            CoorIsize::new(0, 1),
+            CoorIsize::new(0, -1),
+            CoorIsize::new(1, 0),
+            CoorIsize::new(-1, 0),
+            CoorIsize::new(1, 1),
+            CoorIsize::new(-1, -1),
+            CoorIsize::new(1, -1),
+            CoorIsize::new(-1, 1),
+        ];
+        let mut empty_sapce: Option<CoorUsize> = None;
+        for i in all_dir.iter() {
+            let Some(new_coor) = (self.pos.to_coor_isize() + *i)
+                .and_then(|c| Some(c.to_coor_usize()))
+                .filter(|c| c.x < map.width || c.y < map.height)
+            else {
+                continue;
+            };
+            if map.get_str_map_val(&new_coor) == config::EMPTY_ICON {
+                empty_sapce = Some(new_coor)
+            }
+        }
+        empty_sapce
+    }
+    fn is_able_to_eat(
+        &self,
+        all_food: &Vec<CoorUsize>,
+        map: &gen_map::GameMap,
+    ) -> Option<ActorMovement> {
+        if let Some(a) = self.get_nearby_creature(all_food, map) {
+            Some(ActorMovement::new(
+                self.pos,
+                crate::little_life_sim::Movement::Eat,
+                Some(a),
+            ))
+        } else {
+            None
+        }
+    }
+    fn is_able_to_atk(
+        &self,
+        all_eatable_animals: &Vec<CoorUsize>,
+        map: &gen_map::GameMap,
+    ) -> Option<ActorMovement> {
+        if let Some(a) = self.get_nearby_creature(all_eatable_animals, map) {
+            Some(ActorMovement::new(
+                self.pos,
+                crate::little_life_sim::Movement::Eat,
+                Some(a),
+            ))
+        } else {
+            None
+        }
+    }
+    fn is_able_to_mating(
+        &self,
+        all_kinds: &Vec<CoorUsize>,
+        map: &gen_map::GameMap,
+    ) -> Option<ActorMovement> {
+        if let (Some(_), Some(b)) = (
+            self.get_nearby_creature(all_kinds, map),
+            self.get_nearby_space(map),
+        ) {
+            Some(ActorMovement::new(
+                self.pos,
+                crate::little_life_sim::Movement::Eat,
+                Some(b),
+            ))
+        } else {
+            None
+        }
+    }
+    pub fn update(
+        &mut self,
         all_species: &[&Specie],
-        map_width: usize,
-        map_height: usize,
-    ) -> CoorIsize {
+        map: &gen_map::GameMap,
+        sorted_creatures: &[&Creature],
+    ) -> Option<ActorMovement> {
+        if self.hp_left == 0 {
+            return None;
+        }
+        if self.step_cd != 0 {
+            self.step_cd -= 1;
+            return None;
+        }
+        let hp_left_percent = 1 - (self.hp_left / all_species[self.sid as usize].max_hp) * 10;
+        let energy_left_percent =
+            1 - (self.energy_left / all_species[self.sid as usize].max_energy) * 10;
+        self.step_cd = self.speed + hp_left_percent + energy_left_percent / 2;
+        if energy_left_percent <= 2 {
+            self.hp_left -= 1;
+        }
+        if energy_left_percent >= 5 {
+            self.energy_left -= 1;
+            self.hp_left += 1;
+        }
+        // here walk or mating or other thing
+
         let longer_range = if all_species[self.sid as usize].detect_positive_range
             > all_species[self.sid as usize].detect_negative_range
         {
@@ -493,24 +656,37 @@ impl Creature {
         } else {
             all_species[self.sid as usize].detect_negative_range
         };
-        let Some(all_local_creatures) = self.scan_area_leader(
-            map_width,
-            map_height,
-            sorted_all_creature_place,
-            longer_range,
-        ) else {
-            return CoorIsize::new(
-                rand::random_range(-1_i8..2_i8) as isize,
-                rand::random_range(-1_i8..2_i8) as isize,
-            );
+        let Some(all_local_creatures) =
+            self.scan_area_leader(map.width, map.height, sorted_creatures, longer_range)
+        else {
+            if let Some(random_step) = (self.pos.to_coor_isize()
+                + CoorIsize::new(
+                    rand::random_range(-1_i8..2_i8) as isize,
+                    rand::random_range(-1_i8..2_i8) as isize,
+                ))
+            .and_then(|c| Some(c.to_coor_usize()))
+            {
+                return Some(ActorMovement::new(
+                    self.pos,
+                    crate::little_life_sim::Movement::Walk,
+                    Some(random_step),
+                ));
+            } else {
+                return None;
+            }
         };
+
         let all_food = self.scan_local_food(&all_local_creatures, all_species);
+        let all_eatale_animals = self.scan_local_eatable_animals(&all_local_creatures, all_species);
         let all_kinds = self.scan_local_kind(&all_local_creatures, all_species);
         let all_enemies = self.scan_local_threaten(&all_local_creatures, all_species);
         let mut good_weight: usize = 0;
         let mut bad_weight: usize = 0;
         if let Some(have_food) = &all_food {
             good_weight += have_food.len();
+        }
+        if let Some(have_eatable_animals) = &all_eatale_animals {
+            good_weight += have_eatable_animals.len();
         }
         if let Some(have_kind) = &all_kinds {
             good_weight += have_kind.len();
@@ -520,23 +696,33 @@ impl Creature {
         }
         good_weight *= all_species[self.sid as usize].detect_positive_range;
         bad_weight *= all_species[self.sid as usize].detect_negative_range;
-        match rand::random_range(0..=(good_weight + bad_weight)) {
+        let best_dir = match rand::random_range(0..=(good_weight + bad_weight)) {
             result if result <= good_weight => {
                 let closest_food: Option<CoorUsize> = (self.energy_left
                     <= all_species[self.sid as usize].max_energy / 3)
-                    .then_some(all_food)
+                    .then_some(all_food.clone())
                     .flatten()
                     .and_then(|cs| cs.par_iter().map(|c| c.abs_usize(self.pos)).min());
-
                 let closest_kind: Option<CoorUsize> = (self.mating_cold_down == 0)
-                    .then_some(all_kinds)
+                    .then_some(all_kinds.clone())
                     .flatten()
                     .and_then(|cs| cs.par_iter().map(|c| c.abs_usize(self.pos)).min());
                 match (closest_food, closest_kind) {
                     (Some(a), Some(b)) => {
                         if a > b {
+                            if let Some(a) = self.is_able_to_eat(&all_food.unwrap(), map) {
+                                return Some(a);
+                            }
+                            if let Some(a) =
+                                all_eatale_animals.and_then(|c| self.is_able_to_atk(&c, map))
+                            {
+                                return Some(a);
+                            }
                             self.pos.vector_to(a.to_coor_isize())
                         } else {
+                            if let Some(a) = self.is_able_to_mating(&all_kinds.unwrap(), map) {
+                                return Some(a);
+                            }
                             self.pos.vector_to(b.to_coor_isize())
                         }
                     }
@@ -549,73 +735,44 @@ impl Creature {
                 }
             }
             result if result > good_weight => {
-                let Some(enemies) = all_enemies else {
-                    return CoorIsize::new(
-                        rand::random_range(-1_i8..2_i8) as isize,
-                        rand::random_range(-1_i8..2_i8) as isize,
-                    );
-                };
-                let mut all_vector = CoorIsize::new(0, 0);
-                for i in enemies {
-                    if let Some(new_coor) = i.vector_to(self.pos.to_coor_isize()) + all_vector {
-                        all_vector = new_coor
+                if let Some(enemies) = all_enemies {
+                    let mut all_vector = CoorIsize::new(0, 0);
+                    for i in enemies.iter() {
+                        if let Some(new_coor) = i.vector_to(self.pos.to_coor_isize()) + all_vector {
+                            all_vector = new_coor
+                        }
                     }
-                }
-
-                let final_move = CoorIsize::new(
-                    ((all_vector.x) > (0)) as isize - ((all_vector.x) < (0)) as isize,
-                    ((all_vector.y) > (0)) as isize - ((all_vector.y) < (0)) as isize,
-                );
-                if final_move == CoorIsize::new(0, 0) {
+                    let final_move = CoorIsize::new(
+                        ((all_vector.x) > (0)) as isize - ((all_vector.x) < (0)) as isize,
+                        ((all_vector.y) > (0)) as isize - ((all_vector.y) < (0)) as isize,
+                    );
+                    if final_move == CoorIsize::new(0, 0) {
+                        CoorIsize::new(
+                            rand::random_range(-1..2_i8) as isize,
+                            rand::random_range(-1..2_i8) as isize,
+                        )
+                    } else {
+                        final_move
+                    }
+                } else {
                     CoorIsize::new(
                         rand::random_range(-1..2_i8) as isize,
                         rand::random_range(-1..2_i8) as isize,
                     )
-                } else {
-                    final_move
                 }
             }
             _ => CoorIsize::new(
                 rand::random_range(-1_i8..2_i8) as isize,
                 rand::random_range(-1_i8..2_i8) as isize,
             ),
-        }
-    }
-    pub fn update(
-        &mut self,
-        all_species: &[&Specie],
-        map: &gen_map::GameMap,
-        sort_creatures: &[&Creature],
-    ) -> Option<Movement> {
-        if self.is_dead() {
-            return None;
-        }
-        if self.step_cd != 0 {
-            self.step_cd -= 1;
-            return None;
-        }
-        let hp_left_percent = 1 - (self.hp_left / all_species[self.sid as usize].max_hp) * 10;
-        let energy_left_percent =
-            1 - (self.energy_left / all_species[self.sid as usize].max_energy) * 10;
-        self.step_cd = self.speed + hp_left_percent + energy_left_percent / 2;
-        if energy_left_percent <= 2 {
-            self.get_hurt(1);
-        }
-        if energy_left_percent >= 5 {
-            self.energy_left -= 1;
-            self.hp_left += 1;
-        }
-        // here walk or mating or other thing
-
-        if let Some(walk_this_way) =
-            (self.scan_step_where(sort_creatures, all_species, map.width, map.height)
-                + self.pos.to_coor_isize())
-            .and_then(|c| Some(c.to_coor_usize()))
-            .filter(|c| c.x < map.width && c.y < map.height)
-            .filter(|c| map.get_str_map_val(c) == config::EMPTY_ICON)
-        {
-            // return Some(Movement::WalkTo(walk_this_way));
-        }
-        todo!()
+        };
+        Some(ActorMovement::new(
+            self.pos,
+            Walk,
+            Some(CoorUsize::new(
+                self.pos.x.strict_add_signed(best_dir.x),
+                self.pos.y.strict_add_signed(best_dir.y),
+            )),
+        ))
     }
 }

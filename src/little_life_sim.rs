@@ -10,6 +10,27 @@ use crate::creature::Specie;
 use crate::game_tools::CoorIsize;
 use crate::game_tools::CoorUsize;
 use crate::gen_map;
+pub enum Movement {
+    Eat,
+    Atk,
+    Walk,
+    Mating,
+    Dead,
+}
+pub struct ActorMovement {
+    pub actor_pos: CoorUsize,
+    pub action: Movement,
+    pub target_pos: Option<CoorUsize>,
+}
+impl ActorMovement {
+    pub fn new(actor_pos: CoorUsize, action: Movement, target_pos: Option<CoorUsize>) -> Self {
+        ActorMovement {
+            actor_pos,
+            action,
+            target_pos,
+        }
+    }
+}
 pub struct SimulationMap {
     pub sim_map: gen_map::GameMap,
     creatures: Vec<Option<Creature>>,
@@ -31,13 +52,37 @@ impl SimulationMap {
     pub fn get_creature(&self, target_pos: CoorUsize) -> &Option<Creature> {
         &self.creatures[target_pos.to_index(self.sim_map.width)]
     }
-    pub fn walk(&mut self, actor_pos: CoorUsize, new_pos: CoorUsize) {
+    fn atk(&mut self, actor_pos: CoorUsize, target_pos: CoorUsize) {
+        let Some(target) = self.creatures[target_pos.to_index(self.sim_map.width)].clone() else {
+            return;
+        };
+        let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)].as_ref() else {
+            return;
+        };
+        if actor.energy_left == 0 || target.hp_left == 0 {
+            return;
+        }
+        self.creatures[actor_pos.to_index(self.sim_map.width)]
+            .as_mut()
+            .unwrap()
+            .energy_left -= 1;
+        let damage = (self.species[target.sid as usize].max_hp as f32 * 0.1) as usize + 1;
+        let new_target_hp = target.hp_left.saturating_sub(damage);
+        self.creatures[target_pos.to_index(self.sim_map.width)]
+            .as_mut()
+            .unwrap()
+            .hp_left = new_target_hp;
+    }
+    fn walk(&mut self, actor_pos: CoorUsize, new_pos: CoorUsize) {
         let Some(Some(actor)) = self
             .creatures
             .get_mut(actor_pos.to_index(self.sim_map.width))
         else {
             return;
         };
+        if actor.energy_left == 0 {
+            return;
+        }
         self.sim_map
             .change_str_map_val(&actor_pos, config::EMPTY_ICON);
         actor.energy_left -= 1;
@@ -45,7 +90,7 @@ impl SimulationMap {
         self.sim_map
             .change_str_map_val(&new_pos, &self.species[actor.sid as usize].icon.to_string());
     }
-    pub fn eat(&mut self, actor_pos: CoorUsize, target_coor: CoorUsize) {
+    fn eat(&mut self, actor_pos: CoorUsize, target_coor: CoorUsize) {
         let Some(target) = self.creatures[target_coor.to_index(self.sim_map.width)] else {
             return;
         };
@@ -55,6 +100,9 @@ impl SimulationMap {
         else {
             return;
         };
+        if actor.energy_left == 0 {
+            return;
+        }
         actor.energy_left -= 1;
         self.sim_map
             .change_str_map_val(&target_coor, config::EMPTY_ICON);
@@ -65,53 +113,18 @@ impl SimulationMap {
             )) as usize;
         actor.energy_left += total_energy_get;
     }
-    pub fn mating(
-        &mut self,
-        actor_pos: CoorUsize,
-        all_kinds: &Vec<&CoorUsize>,
-        all_species: &[&Specie],
-    ) {
+    fn mating(&mut self, actor_pos: CoorUsize, target_pos: CoorUsize) {
         let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)] else {
             return;
         };
-        if actor.gender == Male {
-            return;
-        }
-        let all_dir: [CoorIsize; 8] = [
-            CoorIsize::new(0, 1),
-            CoorIsize::new(0, -1),
-            CoorIsize::new(1, 0),
-            CoorIsize::new(-1, 0),
-            CoorIsize::new(1, 1),
-            CoorIsize::new(-1, -1),
-            CoorIsize::new(1, -1),
-            CoorIsize::new(-1, 1),
-        ];
-        let mut kind_dir = all_dir.len() + 1;
-        let mut empty_place = None;
-        for i in 0..all_dir.len() {
-            let Some(new_coor) = (actor_pos.to_coor_isize() + all_dir[i])
-                .and_then(|c| Some(c.to_coor_usize()))
-                .filter(|c| c.x < self.sim_map.width || c.y < self.sim_map.height)
-            else {
-                continue;
-            };
-            if self.sim_map.get_str_map_val(&new_coor) == config::EMPTY_ICON {
-                empty_place = Some(new_coor);
-            } else if all_kinds.contains(&&new_coor) {
-                kind_dir = i;
-            }
-        }
-        if kind_dir > all_dir.len() || empty_place.is_none() {
-            return;
-        }
         self.creatures[actor_pos.to_index(self.sim_map.width)]
+            .as_mut()
             .unwrap()
             .energy_left -= 1;
         self.creatures.push(Some(Creature::new(
-            &all_species[actor.sid as usize],
+            &self.species[actor.sid as usize],
             &mut self.sim_map,
-            empty_place.unwrap(),
+            target_pos,
             if actor.gender == Nonbinary {
                 Nonbinary
             } else {
@@ -122,5 +135,9 @@ impl SimulationMap {
                 }
             },
         )));
+    }
+    fn update(&mut self) {
+        let creatures = self.get_creatures_only();
+        let actions: Vec<ActorMovement> = Vec::with_capacity(creatures.len());
     }
 }
