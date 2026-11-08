@@ -1,25 +1,6 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fs::{self, File},
-    io::{BufReader, ErrorKind::DirectoryNotEmpty},
-    path,
-    sync::Arc,
-};
-
-use rand::seq::IndexedRandom;
-use rust_decimal::Decimal;
-use smallvec::SmallVec;
-
-use crate::{
-    game_tools::{CoorIsize, CoorUsize, OptionTUI},
-    little_life_sim::{
-        Creature, DietaryCategories,
-        Gender::{self, Nonbinary},
-        Specie, TrophicLevel,
-    },
-};
-
+use std::{fs::File, io::BufReader};
 mod config;
+mod creature;
 mod game_tools;
 mod gen_map;
 mod get_input;
@@ -170,5 +151,5 @@ fn main() {
     //     bot_1_ai_values.def_might_win_value,
     //     bot_1_win
     // );
-    little_life_sim::main(10, 10);
+    // little_life_sim::main(10, 10);
 }
