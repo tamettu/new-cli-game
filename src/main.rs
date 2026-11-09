@@ -1,4 +1,9 @@
 use std::{fs::File, io::BufReader};
+
+use crate::{
+    creature::{DietaryCategories, Specie, TrophicLevel},
+    game_tools::CoorUsize,
+};
 mod config;
 mod creature;
 mod game_tools;
@@ -11,6 +16,46 @@ mod tictactoe;
 fn main() {
     let file = File::open("assets/tactictoe/ai_values.json").unwrap();
     let reader = BufReader::new(file);
+    let mut id_generator = game_tools::IdGenerator::new();
+    let species = vec![
+        Specie::new(
+            1000,
+            300,
+            5000,
+            6000,
+            30,
+            50,
+            '󱩡',
+            TrophicLevel::Primary,
+            DietaryCategories::Herbivorous,
+            &mut id_generator,
+        ),
+        Specie::new(
+            3000,
+            430,
+            15000,
+            7500,
+            70,
+            40,
+            '',
+            TrophicLevel::Secondary,
+            DietaryCategories::Carnivorous,
+            &mut id_generator,
+        ),
+        Specie::new(
+            50,
+            0,
+            100000,
+            10000,
+            0,
+            0,
+            '󱔐',
+            TrophicLevel::Producer,
+            DietaryCategories::NotApplicable,
+            &mut id_generator,
+        ),
+    ];
+    little_life_sim::main(CoorUsize::new(20, 20), &species, 4);
     // let mut ai_values = AiValues::default();
     // let test: HashMap<String, Decimal> = serde_json::from_reader(reader).unwrap();
     // for (k, v) in test {

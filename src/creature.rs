@@ -93,13 +93,7 @@ pub struct Creature {
     step_cd: usize,
 }
 impl Creature {
-    pub fn new(
-        specie: &Specie,
-        area: &mut gen_map::GameMap,
-        pos: game_tools::CoorUsize,
-        gender: Gender,
-    ) -> Self {
-        area.change_str_map_val(&pos, &specie.icon.to_string());
+    pub fn new(specie: &Specie, pos: game_tools::CoorUsize, gender: Gender) -> Self {
         let random_debuff = |original_value: usize| -> usize {
             if original_value == 0 {
                 return 0;

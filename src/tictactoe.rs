@@ -22,15 +22,7 @@ use std::{
 //------ --------- ------- --- is_bot_mode ----- ------------ ---------- -----
 fn is_bot_mode(rg: &RawGuard) -> bool {
     print!("\x1b[1J\x1b[1H");
-    match menu::show_menu(
-        rg,
-        &["yes", "no"],
-        &"\x1b[30m\x1b[43mDo you want to play with bot?\x1b[0m",
-        95,
-        45,
-        30,
-        46,
-    ) {
+    match menu::show_menu(rg, &["yes", "no"], &menu::MenuOutfit::default()) {
         a if a == "yes".to_string() => true,
         a if a == "no".to_string() => false,
         _ => panic!("u ass, how the hack you even break my program"),
@@ -415,7 +407,8 @@ fn get_payers_icon(rg: &RawGuard, hint: &str, lim_len: usize) -> String {
             &format!("continue with '{}'", input.trim()),
             "change another icon",
         ];
-        if menu::show_menu(rg, &continue_or_not_menu, "", 95, 45, 30, 46) == continue_or_not_menu[0]
+        if menu::show_menu(rg, &continue_or_not_menu, &menu::MenuOutfit::default())
+            == continue_or_not_menu[0]
         {
             return input;
         };
@@ -525,7 +518,7 @@ pub fn start_game(
                 panic!("\x1b[32mThansk for playing my little game\nSee you next time!\x1b[0m");
             }
             Stop => {
-                menu::show_menu(rg, &["Start"], "", 95, 45, 30, 46);
+                menu::show_menu(rg, &["Start"], &menu::MenuOutfit::default());
             }
             Continue => {
                 continue;

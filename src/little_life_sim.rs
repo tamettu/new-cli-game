@@ -10,6 +10,7 @@ use crate::creature::Gender;
 use crate::creature::Gender::Male;
 use crate::creature::Gender::Nonbinary;
 use crate::creature::Specie;
+use crate::creature::TrophicLevel;
 use crate::game_tools::CoorIsize;
 use crate::game_tools::CoorUsize;
 use crate::gen_map;
@@ -55,7 +56,17 @@ impl SimulationMap {
     fn is_target_empty(&self, target_pos: CoorUsize) -> bool {
         self.creatures[target_pos.to_index(self.sim_map.width)].is_none()
     }
-
+    pub fn new_creature(&mut self, target: Creature) -> Result<(), ()> {
+        if self.is_target_out_of_map(target.pos) || !self.is_target_empty(target.pos) {
+            return Err(());
+        }
+        self.creatures[target.pos.to_index(self.sim_map.width)] = Some(target);
+        self.sim_map.change_str_map_val(
+            &target.pos,
+            &self.species[target.sid as usize].icon.to_string(),
+        );
+        Ok(())
+    }
     fn change_coor(&mut self, actor: Creature, target_pos: CoorUsize, icon: &str) {
         if self.is_target_out_of_map(actor.pos) || self.is_target_out_of_map(target_pos) {
             return;
@@ -122,7 +133,10 @@ impl SimulationMap {
         let Some(target) = self.creatures[target_coor.to_index(self.sim_map.width)] else {
             return;
         };
-        self.del_creature(target_coor);
+        self.creatures[target_coor.to_index(self.sim_map.width)]
+            .unwrap()
+            .energy_left
+            .strict_sub((self.species[target.sid as usize].max_energy as f32 * 0.9) as usize + 1);
         let Some(Some(actor)) = self
             .creatures
             .get_mut(actor_pos.to_index(self.sim_map.width))
@@ -207,4 +221,27 @@ impl SimulationMap {
     }
 }
 
-fn main(map_size: CoorUsize) {}
+pub fn main(map_size: CoorUsize, species: &Vec<Specie>, init_animals_amount: usize) {
+    let mut sim_map = SimulationMap::new(map_size.x, map_size.y, species.clone());
+    for i in species.iter() {
+        for _ in 0..init_animals_amount {
+            sim_map.new_creature(Creature::new(
+                i,
+                CoorUsize::new(
+                    rand::random_range(0..sim_map.sim_map.width - 1),
+                    rand::random_range(0..sim_map.sim_map.height - 1),
+                ),
+                if i.trophic_level == TrophicLevel::Producer {
+                    Gender::Nonbinary
+                } else {
+                    match rand::random_range(0..2) {
+                        0 => Gender::Female,
+                        1 => Gender::Male,
+                        _ => Gender::Nonbinary,
+                    }
+                },
+            ));
+        }
+    }
+    sim_map.sim_map.show_map_without_case();
+}
