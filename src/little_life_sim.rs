@@ -133,7 +133,7 @@ impl SimulationMap {
         let Some(target) = self.creatures[target_coor.to_index(self.sim_map.width)] else {
             return;
         };
-        self.creatures[target_coor.to_index(self.sim_map.width)]
+        let _ = self.creatures[target_coor.to_index(self.sim_map.width)]
             .unwrap()
             .energy_left
             .strict_sub((self.species[target.sid as usize].max_energy as f32 * 0.9) as usize + 1);
@@ -165,9 +165,8 @@ impl SimulationMap {
             .as_mut()
             .unwrap()
             .energy_left -= 1;
-        self.creatures[target_pos.to_index(self.sim_map.width)] = Some(Creature::new(
+        let _ = self.new_creature(Creature::new(
             &self.species[actor.sid as usize],
-            &mut self.sim_map,
             target_pos,
             if actor.gender == Nonbinary {
                 Nonbinary
@@ -225,22 +224,31 @@ pub fn main(map_size: CoorUsize, species: &Vec<Specie>, init_animals_amount: usi
     let mut sim_map = SimulationMap::new(map_size.x, map_size.y, species.clone());
     for i in species.iter() {
         for _ in 0..init_animals_amount {
-            sim_map.new_creature(Creature::new(
-                i,
-                CoorUsize::new(
-                    rand::random_range(0..sim_map.sim_map.width - 1),
-                    rand::random_range(0..sim_map.sim_map.height - 1),
-                ),
-                if i.trophic_level == TrophicLevel::Producer {
-                    Gender::Nonbinary
+            loop {
+                if sim_map
+                    .new_creature(Creature::new(
+                        i,
+                        CoorUsize::new(
+                            rand::random_range(0..sim_map.sim_map.width - 1),
+                            rand::random_range(0..sim_map.sim_map.height - 1),
+                        ),
+                        if i.trophic_level == TrophicLevel::Producer {
+                            Gender::Nonbinary
+                        } else {
+                            match rand::random_range(0..2) {
+                                0 => Gender::Female,
+                                1 => Gender::Male,
+                                _ => Gender::Nonbinary,
+                            }
+                        },
+                    ))
+                    .is_err()
+                {
+                    continue;
                 } else {
-                    match rand::random_range(0..2) {
-                        0 => Gender::Female,
-                        1 => Gender::Male,
-                        _ => Gender::Nonbinary,
-                    }
-                },
-            ));
+                    break;
+                }
+            }
         }
     }
     sim_map.sim_map.show_map_without_case();
