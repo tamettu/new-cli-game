@@ -11,7 +11,6 @@ fn show_menu_map(
     width: usize,
     menu_outfit: &MenuOutfit,
 ) {
-    let width_for_text = width;
     let width_for_highlight = width + 1;
     let mut full_text = String::with_capacity(1500);
     //------ ------------ ------- ------------ ------------ ------------ ----------

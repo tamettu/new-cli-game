@@ -5,6 +5,7 @@ use crate::game_tools::{self, CoorIsize};
 use crate::gen_map::{self};
 use crate::little_life_sim::ActorMovement;
 use crate::little_life_sim::Movement::Walk;
+use rand::random;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
 use std::collections::HashMap;
@@ -90,7 +91,7 @@ pub struct Creature {
     pub energy_left: usize,
     pub hp_left: usize,
     pub speed: usize,
-    step_cd: usize,
+    pub step_cd: usize,
 }
 impl Creature {
     pub fn new(specie: &Specie, pos: game_tools::CoorUsize, gender: Gender) -> Self {
@@ -110,23 +111,17 @@ impl Creature {
             speed,
             energy_left,
             mating_cold_down,
-        ) = if rand::random_range(0..=100) //jump to next line you ass lsp
-            < specie.trophic_level.get_die_rate()
-        {
-            (0, 0, 0, 0)
-        } else {
-            (
-                random_debuff(specie.max_hp),
-                random_debuff(specie.max_speed),
-                random_debuff(specie.max_energy),
-                if specie.max_mating_cold_down < 1 {
-                    0
-                } else {
-                    (specie.max_mating_cold_down as f32 //jump to next line you ass lsp
+        ) = (
+            random_debuff(specie.max_hp),
+            random_debuff(specie.max_speed),
+            random_debuff(specie.max_energy),
+            if specie.max_mating_cold_down < 1 {
+                0
+            } else {
+                (specie.max_mating_cold_down as f32 //jump to next line you ass lsp
                     * rand::random_range(0.5..=1.0)) as usize
-                },
-            )
-        };
+            },
+        );
         let sid = specie.get_sid();
         let step_cd = rand::random_range(0..3);
         Creature {
@@ -168,37 +163,27 @@ impl Creature {
             .and_then(|c| c.pos.to_coor_isize() * -1)
             .and_then(|c| c + self.pos.to_coor_isize())
             .and_then(|c| Some(c.abs_usize(self.pos)))
-            .and_then(|c| {
-                println!("{} {}", c.x, c.y);
-                Some(c.x >= range / 3 && c.y >= range / 3)
-            });
+            .and_then(|c| Some(c.x >= range / 3 && c.y >= range / 3));
         let is_right_too_tight = (self_index.checked_add(half_range_1d))
             .and_then(|c| sort_creatures.get(c))
             .and_then(|c| c.pos + self.pos)
             .and_then(|c| Some(c.abs_usize(self.pos)))
-            .and_then(|c| {
-                println!("{} {}", c.x, c.y);
-                Some(c.x >= range / 3 && c.y >= range / 3)
-            });
+            .and_then(|c| Some(c.x >= range / 3 && c.y >= range / 3));
 
         match (is_left_too_tight, is_right_too_tight) {
             // ========= Both left and right have stuffs =========
             (Some(a), Some(b)) => {
                 if a && b {
-                    game_tools::debug(&format!("a {a} b {b} | dense\n"), true);
                     self.scan_area_when_dense(map_width, map_height, sort_creatures, range)
                 } else {
-                    game_tools::debug(&format!("a {a} b {b} | sparse\n"), true);
                     self.scan_area_when_sparse(sort_creatures, &index_sort_creatures, range)
                 }
             }
             // ========= Only left have stuffs =========
             (Some(a), None) => {
                 if a {
-                    game_tools::debug("a | dense\n", true);
                     self.scan_area_when_dense(map_width, map_height, sort_creatures, range)
                 } else {
-                    game_tools::debug("a | sparse\n", true);
                     self.scan_area_when_sparse(&sort_creatures, &index_sort_creatures, range)
                 }
             }
@@ -206,18 +191,13 @@ impl Creature {
             (None, Some(b)) => {
                 game_tools::debug("b\n", true);
                 if b {
-                    game_tools::debug("b | dense\n", true);
                     self.scan_area_when_dense(map_width, map_height, sort_creatures, range)
                 } else {
-                    game_tools::debug("b | sparse\n", true);
                     self.scan_area_when_sparse(&sort_creatures, &index_sort_creatures, range)
                 }
             }
             // ========= Nothings nearby =========
-            _ => {
-                game_tools::debug("Na\n", true);
-                self.scan_area_when_sparse(&sort_creatures, &index_sort_creatures, range)
-            }
+            _ => self.scan_area_when_sparse(&sort_creatures, &index_sort_creatures, range),
         }
     }
     fn scan_area_when_sparse<'a>(
@@ -617,7 +597,7 @@ impl Creature {
         }
     }
     pub fn update(&mut self, all_species: &[&Specie]) {
-        if self.hp_left == 0 {
+        if self.hp_left == 0 || self.energy_left == 0 {
             if self.energy_left != 0 {
                 self.energy_left -= 1
             }
@@ -626,26 +606,21 @@ impl Creature {
         if self.step_cd != 0 {
             self.step_cd -= 1;
             return;
+        } else {
+            self.step_cd = self.speed
         }
-        let hp_left_percent = 1 - (self.hp_left / all_species[self.sid as usize].max_hp) * 10;
-        let energy_left_percent =
-            1 - (self.energy_left / all_species[self.sid as usize].max_energy) * 10;
-        self.step_cd = self.speed + hp_left_percent + energy_left_percent / 2;
-        if energy_left_percent <= 2 {
-            self.hp_left -= 1;
-        }
-        if energy_left_percent >= 5 {
+        if self.hp_left + 1 != all_species[self.sid as usize].max_hp {
             self.energy_left -= 1;
             self.hp_left += 1;
         }
     }
-    pub fn get_movement(
+    pub fn get_movement_leader(
         &self,
         all_species: &[&Specie],
         map: &gen_map::GameMap,
         sorted_creatures: &[&Creature],
     ) -> Option<ActorMovement> {
-        if self.hp_left == 0 {
+        if self.hp_left == 0 || self.step_cd != 0 || self.energy_left == 0 || self.speed == 0 {
             if self.energy_left == 0 {
                 return Some(ActorMovement::new(
                     self.pos,
@@ -702,83 +677,287 @@ impl Creature {
         }
         good_weight *= all_species[self.sid as usize].detect_positive_range;
         bad_weight *= all_species[self.sid as usize].detect_negative_range;
-        let best_dir = match rand::random_range(0..=(good_weight + bad_weight)) {
-            result if result <= good_weight => {
-                let closest_food: Option<CoorUsize> = (self.energy_left
-                    <= all_species[self.sid as usize].max_energy / 3)
-                    .then_some(all_food.clone())
-                    .flatten()
-                    .and_then(|cs| cs.par_iter().map(|c| c.abs_usize(self.pos)).min());
-                let closest_kind: Option<CoorUsize> = (self.mating_cold_down == 0)
-                    .then_some(all_kinds.clone())
-                    .flatten()
-                    .and_then(|cs| cs.par_iter().map(|c| c.abs_usize(self.pos)).min());
-                match (closest_food, closest_kind) {
-                    (Some(a), Some(b)) => {
-                        if a > b {
-                            if let Some(a) = self.is_able_to_eat(&all_food.unwrap(), map) {
-                                return Some(a);
-                            }
-                            if let Some(a) =
-                                all_eatale_animals.and_then(|c| self.is_able_to_atk(&c, map))
-                            {
-                                return Some(a);
-                            }
-                            self.pos.vector_to(a.to_coor_isize())
-                        } else {
-                            if let Some(a) = self.is_able_to_mating(&all_kinds.unwrap(), map) {
-                                return Some(a);
-                            }
-                            self.pos.vector_to(b.to_coor_isize())
-                        }
-                    }
-                    (Some(a), None) => self.pos.vector_to(a.to_coor_isize()),
-                    (None, Some(b)) => self.pos.vector_to(b.to_coor_isize()),
-                    _ => CoorIsize::new(
-                        rand::random_range(-1_i8..2_i8) as isize,
-                        rand::random_range(-1_i8..2_i8) as isize,
-                    ),
-                }
-            }
-            result if result > good_weight => {
-                if let Some(enemies) = all_enemies {
-                    let mut all_vector = CoorIsize::new(0, 0);
-                    for i in enemies.iter() {
-                        if let Some(new_coor) = i.vector_to(self.pos.to_coor_isize()) + all_vector {
-                            all_vector = new_coor
-                        }
-                    }
-                    let final_move = CoorIsize::new(
-                        ((all_vector.x) > (0)) as isize - ((all_vector.x) < (0)) as isize,
-                        ((all_vector.y) > (0)) as isize - ((all_vector.y) < (0)) as isize,
-                    );
-                    if final_move == CoorIsize::new(0, 0) {
-                        CoorIsize::new(
-                            rand::random_range(-1..2_i8) as isize,
-                            rand::random_range(-1..2_i8) as isize,
-                        )
-                    } else {
-                        final_move
-                    }
-                } else {
-                    CoorIsize::new(
-                        rand::random_range(-1..2_i8) as isize,
-                        rand::random_range(-1..2_i8) as isize,
-                    )
-                }
-            }
-            _ => CoorIsize::new(
-                rand::random_range(-1_i8..2_i8) as isize,
-                rand::random_range(-1_i8..2_i8) as isize,
+        match rand::random_range(0..=(good_weight + bad_weight)) {
+            a if a <= good_weight => self.get_movement_good_weigth(
+                all_species,
+                all_food,
+                all_kinds,
+                all_eatale_animals,
+                map,
             ),
-        };
-        Some(ActorMovement::new(
-            self.pos,
-            Walk,
-            Some(CoorUsize::new(
-                self.pos.x.strict_add_signed(best_dir.x),
-                self.pos.y.strict_add_signed(best_dir.y),
+            a if a > good_weight => self.get_movement_bad_weigth(all_enemies),
+            _ => Some(ActorMovement::new(
+                self.pos,
+                Walk,
+                Some(CoorUsize::new(
+                    self.pos
+                        .x
+                        .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
+                    self.pos
+                        .y
+                        .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
+                )),
             )),
-        ))
+        }
     }
+    fn get_movement_good_weigth(
+        &self,
+        all_species: &[&Specie],
+        all_food: Option<Vec<CoorUsize>>,
+        all_kinds: Option<Vec<CoorUsize>>,
+        all_eatale_animals: Option<Vec<CoorUsize>>,
+        map: &gen_map::GameMap,
+    ) -> Option<ActorMovement> {
+        let closest_food: Option<CoorUsize> = (self.energy_left
+            <= all_species[self.sid as usize].max_energy / 3)
+            .then_some(all_food.clone())
+            .flatten()
+            .and_then(|cs| cs.par_iter().map(|c| c.abs_usize(self.pos)).min());
+        let closest_kind: Option<CoorUsize> = (self.mating_cold_down == 0)
+            .then_some(all_kinds.clone())
+            .flatten()
+            .and_then(|cs| cs.par_iter().map(|c| c.abs_usize(self.pos)).min());
+        let check_food = |a: &CoorUsize| -> Option<ActorMovement> {
+            if let Some(a) = all_food.and_then(|c| self.is_able_to_eat(&c, map)) {
+                return Some(a);
+            }
+            if let Some(a) = all_eatale_animals
+                .as_ref()
+                .and_then(|c| self.is_able_to_atk(&c, map))
+            {
+                return Some(a);
+            }
+            if let Some(new_coor) = (self.pos.vector_to(a.to_coor_isize())
+                + self.pos.to_coor_isize())
+            .and_then(|c| Some(c.to_coor_usize()))
+            {
+                return Some(ActorMovement::new(self.pos, Walk, Some(new_coor)));
+            }
+            return None;
+        };
+        let check_kinds = |b: &CoorUsize| -> Option<ActorMovement> {
+            if let Some(b) = self.is_able_to_mating(&all_kinds.unwrap(), map) {
+                return Some(b);
+            }
+            if let Some(new_coor) = (self.pos.vector_to(b.to_coor_isize())
+                + self.pos.to_coor_isize())
+            .and_then(|c| Some(c.to_coor_usize()))
+            {
+                return Some(ActorMovement::new(self.pos, Walk, Some(new_coor)));
+            }
+            return None;
+        };
+        match (closest_food, closest_kind) {
+            (Some(a), Some(b)) => {
+                if a > b {
+                    check_food(&a)
+                } else {
+                    check_kinds(&b)
+                }
+            }
+            (Some(a), None) => check_food(&a),
+            (None, Some(b)) => check_kinds(&b),
+            _ => todo!(),
+        }
+    }
+    fn get_movement_bad_weigth(
+        &self,
+        all_enemies: Option<Vec<CoorUsize>>,
+    ) -> Option<ActorMovement> {
+        let random_walk = || -> ActorMovement {
+            return ActorMovement::new(
+                self.pos,
+                Walk,
+                Some(CoorUsize::new(
+                    self.pos
+                        .x
+                        .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
+                    self.pos
+                        .y
+                        .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
+                )),
+            );
+        };
+        let Some(enemies) = all_enemies else {
+            return Some(random_walk());
+        };
+        let mut all_vector = CoorIsize::new(0, 0);
+        for i in enemies.iter() {
+            if let Some(new_coor) = i.vector_to(self.pos.to_coor_isize()) + all_vector {
+                all_vector = new_coor
+            }
+        }
+        let final_move = CoorIsize::new(
+            ((all_vector.x) > (0)) as isize - ((all_vector.x) < (0)) as isize,
+            ((all_vector.y) > (0)) as isize - ((all_vector.y) < (0)) as isize,
+        );
+        if final_move == CoorIsize::new(0, 0) {
+            return Some(random_walk());
+        } else {
+            return Some(ActorMovement::new(
+                self.pos,
+                Walk,
+                Some(CoorUsize::new(
+                    self.pos.x.saturating_add_signed(final_move.x),
+                    self.pos.y.saturating_add_signed(final_move.y),
+                )),
+            ));
+        }
+    }
+    //     pub fn get_movement_debug(
+    //         &self,
+    //         all_species: &[&Specie],
+    //         map: &gen_map::GameMap,
+    //         sorted_creatures: &[&Creature],
+    //     ) -> Option<ActorMovement> {
+    //         game_tools::debug(&format!("Pos: {} {} start\n",self.pos.x,self.pos.y), false);
+    //         game_tools::debug(&"detect is hp or energy or speed = 0 or step_cd != 0, bellow dont see A mean returned\n", false);
+    //         if self.hp_left == 0 || self.step_cd != 0 || self.energy_left == 0 || self.speed == 0 {
+    //             if self.energy_left == 0 {
+    //                 return Some(ActorMovement::new(
+    //                     self.pos,
+    //                     crate::little_life_sim::Movement::Gone,
+    //                     None,
+    //                 ));
+    //             }
+    //             return None;
+    //         }
+    //         game_tools::debug("A\n", false);
+    //         let longer_range = if all_species[self.sid as usize].detect_positive_range
+    //             > all_species[self.sid as usize].detect_negative_range
+    //         {
+    //             all_species[self.sid as usize].detect_positive_range
+    //         } else {
+    //             all_species[self.sid as usize].detect_negative_range
+    //         };
+    //         game_tools::debug("Start scan all creatures. dont see B mean returned\n", false);
+    //         let Some(all_local_creatures) =
+    //             self.scan_area_leader(map.width, map.height, sorted_creatures, longer_range)
+    //         else {
+    //             if let Some(random_step) = (self.pos.to_coor_isize()
+    //                 + CoorIsize::new(
+    //                     rand::random_range(-1_i8..2_i8) as isize,
+    //                     rand::random_range(-1_i8..2_i8) as isize,
+    //                 ))
+    //             .and_then(|c| Some(c.to_coor_usize()))
+    //             {
+    //                 return Some(ActorMovement::new(
+    //                     self.pos,
+    //                     crate::little_life_sim::Movement::Walk,
+    //                     Some(random_step),
+    //                 ));
+    //             } else {
+    //                 return None;
+    //             }
+    //         };
+    //         game_tools::debug("B\n", false);
+    //         let all_food = self.scan_local_food(&all_local_creatures, all_species);
+    //         let all_eatale_animals = self.scan_local_eatable_animals(&all_local_creatures, all_species);
+    //         let all_kinds = self.scan_local_kind(&all_local_creatures, all_species);
+    //         let all_enemies = self.scan_local_threaten(&all_local_creatures, all_species);
+    //         let mut good_weight: usize = 0;
+    //         let mut bad_weight: usize = 0;
+    //         if let Some(have_food) = &all_food {
+    //             good_weight += have_food.len();
+    //             game_tools::debug("have food nearby wo\n", false);
+    //         }
+    //         if let Some(have_eatable_animals) = &all_eatale_animals {
+    //             good_weight += have_eatable_animals.len();
+    //             game_tools::debug("have food i can get wo\n", false);
+    //         }
+    //         if let Some(have_kind) = &all_kinds {
+    //             good_weight += have_kind.len();
+    //             game_tools::debug("have kinds can mating wo\n", false);
+    //         }
+    //         if let Some(have_enemy) = &all_enemies {
+    //             bad_weight = have_enemy.len();
+    //             game_tools::debug("i might become food wo\n", false);
+    //         }
+    //         game_tools::debug(&format!("good width: {} | bad {}\n",good_weight,bad_weight), false);
+    //         game_tools::debug("start random choice one, A = good, B = bad\n", false);
+    //         good_weight *= all_species[self.sid as usize].detect_positive_range;
+    //         bad_weight *= all_species[self.sid as usize].detect_negative_range;
+    //         match rand::random_range(0..=(good_weight + bad_weight)) {
+    //             result if result <= good_weight => {
+    //                 game_tools::debug("A", false);
+    //                 game_tools::debug("Start choice sex or food, C = food, D = sex", false);
+    //                 let closest_food: Option<CoorUsize> = (self.energy_left
+    //                     <= all_species[self.sid as usize].max_energy / 3)
+    //                     .then_some(all_food.clone())
+    //                     .flatten()
+    //                     .and_then(|cs| cs.par_iter().map(|c| c.abs_usize(self.pos)).min());
+    //                 let closest_kind: Option<CoorUsize> = (self.mating_cold_down == 0)
+    //                     .then_some(all_kinds.clone())
+    //                     .flatten()
+    //                     .and_then(|cs| cs.par_iter().map(|c| c.abs_usize(self.pos)).min());
+    //                 match (closest_food, closest_kind) {
+    //                     (Some(a), Some(b)) => {
+    //                         if a > b {
+    //                             game_tools::debug("C walk", false);
+    //                             if let Some(a) = self.is_able_to_eat(&all_food.unwrap(), map) {
+    //                                 return Some(a);
+    //                             }
+    //                             if let Some(a) =
+    //                                 all_eatale_animals.and_then(|c| self.is_able_to_atk(&c, map))
+    //                             {
+    //                                 game_tools::debug("C eat", false);
+    //                                 return Some(ActorMovement::new(
+    //             self.pos,
+    //             crate::little_life_sim::Movement::Eat,
+    //             Some(CoorUsize::new(
+    //                 self.pos.x.saturating_add_signed(),
+    //                 self.pos.y.saturating_add_signed(best_dir.y),
+    //             )),
+    //         ))
+    // ;
+    //                             }
+    //                             self.pos.vector_to(a.to_coor_isize())
+    //                         } else {
+    //                             if let Some(a) = self.is_able_to_mating(&all_kinds.unwrap(), map) {
+    //                                 return Some(a);
+    //                             }
+    //                             self.pos.vector_to(b.to_coor_isize())
+    //                         }
+    //                     }
+    //                     (Some(a), None) => self.pos.vector_to(a.to_coor_isize()),
+    //                     (None, Some(b)) => self.pos.vector_to(b.to_coor_isize()),
+    //                     _ => CoorIsize::new(
+    //                         rand::random_range(-1_i8..2_i8) as isize,
+    //                         rand::random_range(-1_i8..2_i8) as isize,
+    //                     ),
+    //                 }
+    //             }
+    //             result if result > good_weight => {
+    //                 if let Some(enemies) = all_enemies {
+    //                     let mut all_vector = CoorIsize::new(0, 0);
+    //                     for i in enemies.iter() {
+    //                         if let Some(new_coor) = i.vector_to(self.pos.to_coor_isize()) + all_vector {
+    //                             all_vector = new_coor
+    //                         }
+    //                     }
+    //                     let final_move = CoorIsize::new(
+    //                         ((all_vector.x) > (0)) as isize - ((all_vector.x) < (0)) as isize,
+    //                         ((all_vector.y) > (0)) as isize - ((all_vector.y) < (0)) as isize,
+    //                     );
+    //                     if final_move == CoorIsize::new(0, 0) {
+    //                         CoorIsize::new(
+    //                             rand::random_range(-1..2_i8) as isize,
+    //                             rand::random_range(-1..2_i8) as isize,
+    //                         )
+    //                     } else {
+    //                         final_move
+    //                     }
+    //                 } else {
+    //                     CoorIsize::new(
+    //                         rand::random_range(-1..2_i8) as isize,
+    //                         rand::random_range(-1..2_i8) as isize,
+    //                     )
+    //                 }
+    //             }
+    //             _ => CoorIsize::new(
+    //                 rand::random_range(-1_i8..2_i8) as isize,
+    //                 rand::random_range(-1_i8..2_i8) as isize,
+    //             ),
+    //         };
+    //             }
 }

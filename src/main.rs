@@ -19,10 +19,10 @@ fn main() {
     let mut id_generator = game_tools::IdGenerator::new();
     let species = vec![
         Specie::new(
-            1000,
-            300,
-            5000,
-            6000,
+            10,
+            3,
+            50,
+            6,
             30,
             50,
             '󱩡',
@@ -31,10 +31,10 @@ fn main() {
             &mut id_generator,
         ),
         Specie::new(
-            3000,
-            430,
-            15000,
-            7500,
+            22,
+            6,
+            150,
+            8,
             70,
             40,
             '',
@@ -55,7 +55,7 @@ fn main() {
             &mut id_generator,
         ),
     ];
-    little_life_sim::main(CoorUsize::new(20, 20), &species, 4);
+    little_life_sim::main(CoorUsize::new(10, 10), &species, 4);
     // let mut ai_values = AiValues::default();
     // let test: HashMap<String, Decimal> = serde_json::from_reader(reader).unwrap();
     // for (k, v) in test {

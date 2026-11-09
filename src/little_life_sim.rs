@@ -1,3 +1,7 @@
+use std::arch::x86_64::_mm_fpclass_ph_mask;
+use std::thread;
+use std::time::Duration;
+
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::IntoParallelRefMutIterator;
@@ -11,9 +15,11 @@ use crate::creature::Gender::Male;
 use crate::creature::Gender::Nonbinary;
 use crate::creature::Specie;
 use crate::creature::TrophicLevel;
+use crate::game_tools;
 use crate::game_tools::CoorIsize;
 use crate::game_tools::CoorUsize;
 use crate::gen_map;
+#[derive(Copy, Clone, Debug)]
 pub enum Movement {
     Eat,
     Atk,
@@ -43,7 +49,7 @@ pub struct SimulationMap {
 impl SimulationMap {
     pub fn new(width: usize, height: usize, species: Vec<Specie>) -> Self {
         let sim_map = gen_map::GameMap::new(width, height);
-        let creatures = Vec::with_capacity(width * height);
+        let creatures = vec![None; width * height];
         SimulationMap {
             sim_map,
             creatures,
@@ -74,6 +80,12 @@ impl SimulationMap {
         self.del_creature(actor.pos);
         self.sim_map.change_str_map_val(&target_pos, icon);
         self.creatures[target_pos.to_index(self.sim_map.width)] = Some(actor);
+        if let Some(Some(temp)) = self
+            .creatures
+            .get_mut(target_pos.to_index(self.sim_map.width))
+        {
+            temp.pos = target_pos;
+        }
     }
     fn del_creature(&mut self, target_pos: CoorUsize) {
         if self.is_target_out_of_map(target_pos) {
@@ -179,8 +191,7 @@ impl SimulationMap {
             },
         ));
     }
-    fn update(&mut self) {
-        let ref_species: Vec<&Specie> = self.species.iter().collect();
+    fn update(&mut self, ref_species: &Vec<&Specie>) {
         self.creatures
             .par_iter_mut()
             .flatten()
@@ -196,31 +207,56 @@ impl SimulationMap {
 
         // ======================================= //
 
-        let _ = actions.iter().for_each(|c| match c.action {
-            Movement::Eat => {
-                self.eat(c.actor_pos, c.target_pos.unwrap());
+        let _ = actions.iter().for_each(|c| {
+            game_tools::debug(
+                &format!(
+                    "{} {} {}| {:?} | {} {}\n",
+                    if let Some(a) = self.creatures[c.actor_pos.to_index(self.sim_map.width)] {
+                        self.species[a.sid as usize].icon.to_string()
+                    } else {
+                        "None".to_string()
+                    },
+                    c.actor_pos.x,
+                    c.actor_pos.y,
+                    c.action,
+                    if let Some(a) = c.target_pos {
+                        a.x as isize
+                    } else {
+                        -1
+                    },
+                    if let Some(a) = c.target_pos {
+                        a.y as isize
+                    } else {
+                        -1
+                    }
+                ),
+                false,
+            );
+            match c.action {
+                Movement::Eat => {
+                    self.eat(c.actor_pos, c.target_pos.unwrap());
+                }
+                Movement::Atk => {
+                    self.atk(c.actor_pos, c.target_pos.unwrap());
+                }
+                Movement::Walk => {
+                    self.walk(c.actor_pos, c.target_pos.unwrap());
+                }
+                Movement::Mating => {
+                    self.mating(c.actor_pos, c.target_pos.unwrap());
+                }
+                Movement::Gone => {
+                    self.del_creature(c.actor_pos);
+                }
+                _ => (),
             }
-            Movement::Atk => {
-                self.atk(c.actor_pos, c.target_pos.unwrap());
-            }
-            Movement::Walk => {
-                self.walk(c.actor_pos, c.target_pos.unwrap());
-            }
-            Movement::Mating => {
-                self.mating(c.actor_pos, c.target_pos.unwrap());
-            }
-            Movement::Gone => {
-                self.creatures
-                    .remove(c.actor_pos.to_index(self.sim_map.width));
-                self.sim_map
-                    .change_str_map_val(&c.actor_pos, config::EMPTY_ICON);
-            }
-            _ => (),
         });
     }
 }
 
 pub fn main(map_size: CoorUsize, species: &Vec<Specie>, init_animals_amount: usize) {
+    game_tools::debug("", true);
+    let ref_species: Vec<&Specie> = species.iter().collect();
     let mut sim_map = SimulationMap::new(map_size.x, map_size.y, species.clone());
     for i in species.iter() {
         for _ in 0..init_animals_amount {
@@ -251,5 +287,13 @@ pub fn main(map_size: CoorUsize, species: &Vec<Specie>, init_animals_amount: usi
             }
         }
     }
-    sim_map.sim_map.show_map_without_case();
+    let mut loop_count = 0;
+    loop {
+        game_tools::debug("---\n", false);
+        sim_map.sim_map.show_map_without_case();
+        thread::sleep(Duration::from_millis(500));
+        sim_map.update(&ref_species);
+        loop_count += 1;
+        game_tools::debug(&format!("--- LOOP {} END ---\n", loop_count), false);
+    }
 }
