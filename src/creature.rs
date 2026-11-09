@@ -757,7 +757,20 @@ impl Creature {
             }
             (Some(a), None) => check_food(&a),
             (None, Some(b)) => check_kinds(&b),
-            _ => todo!(),
+            _ => {
+                return Some(ActorMovement::new(
+                    self.pos,
+                    Walk,
+                    Some(CoorUsize::new(
+                        self.pos
+                            .x
+                            .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
+                        self.pos
+                            .y
+                            .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
+                    )),
+                ));
+            }
         }
     }
     fn get_movement_bad_weight(
