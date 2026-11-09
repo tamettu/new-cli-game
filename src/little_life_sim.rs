@@ -56,16 +56,21 @@ impl SimulationMap {
         self.creatures[target_pos.to_index(self.sim_map.width)].is_none()
     }
 
-    fn change_map(&mut self, actor: Creature, target_pos: CoorUsize, icon: &str) {
+    fn change_coor(&mut self, actor: Creature, target_pos: CoorUsize, icon: &str) {
         if self.is_target_out_of_map(actor.pos) || self.is_target_out_of_map(target_pos) {
             return;
         }
-        self.sim_map
-            .change_str_map_val(&actor.pos, config::EMPTY_ICON);
-        self.creatures[actor.pos.to_index(self.sim_map.width)] = None;
-
+        self.del_creature(actor.pos);
         self.sim_map.change_str_map_val(&target_pos, icon);
         self.creatures[target_pos.to_index(self.sim_map.width)] = Some(actor);
+    }
+    fn del_creature(&mut self, target_pos: CoorUsize) {
+        if self.is_target_out_of_map(target_pos) {
+            return;
+        }
+        self.sim_map
+            .change_str_map_val(&target_pos, config::EMPTY_ICON);
+        self.creatures[target_pos.to_index(self.sim_map.width)] = None;
     }
     fn get_creatures_only(&self) -> Vec<&Creature> {
         self.creatures.par_iter().flatten().collect()
@@ -74,6 +79,9 @@ impl SimulationMap {
         &self.creatures[target_pos.to_index(self.sim_map.width)]
     }
     fn atk(&mut self, actor_pos: CoorUsize, target_pos: CoorUsize) {
+        if self.is_target_out_of_map(target_pos) {
+            return;
+        }
         let Some(target) = self.creatures[target_pos.to_index(self.sim_map.width)].clone() else {
             return;
         };
@@ -95,26 +103,26 @@ impl SimulationMap {
             .hp_left = new_target_hp;
     }
     fn walk(&mut self, actor_pos: CoorUsize, new_pos: CoorUsize) {
-        let Some(Some(actor)) = self
-            .creatures
-            .get_mut(actor_pos.to_index(self.sim_map.width))
-        else {
+        if self.is_target_out_of_map(new_pos) || !self.is_target_empty(new_pos) {
+            return;
+        }
+        let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)] else {
             return;
         };
         if actor.energy_left == 0 {
             return;
         }
-        self.sim_map
-            .change_str_map_val(&actor_pos, config::EMPTY_ICON);
-        actor.energy_left -= 1;
-        actor.pos = new_pos;
-        self.sim_map
-            .change_str_map_val(&new_pos, &self.species[actor.sid as usize].icon.to_string());
+        self.change_coor(
+            actor,
+            new_pos,
+            &self.species[actor.sid as usize].icon.to_string(),
+        );
     }
     fn eat(&mut self, actor_pos: CoorUsize, target_coor: CoorUsize) {
         let Some(target) = self.creatures[target_coor.to_index(self.sim_map.width)] else {
             return;
         };
+        self.del_creature(target_coor);
         let Some(Some(actor)) = self
             .creatures
             .get_mut(actor_pos.to_index(self.sim_map.width))
@@ -125,8 +133,6 @@ impl SimulationMap {
             return;
         }
         actor.energy_left -= 1;
-        self.sim_map
-            .change_str_map_val(&target_coor, config::EMPTY_ICON);
         let total_energy_get = target.energy_left
             * (0.1_f32.powf(
                 (self.species[actor.sid as usize].trophic_level as u8
@@ -135,6 +141,9 @@ impl SimulationMap {
         actor.energy_left += total_energy_get;
     }
     fn mating(&mut self, actor_pos: CoorUsize, target_pos: CoorUsize) {
+        if self.is_target_out_of_map(target_pos) || !self.is_target_empty(target_pos) {
+            return;
+        }
         let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)] else {
             return;
         };
@@ -142,7 +151,7 @@ impl SimulationMap {
             .as_mut()
             .unwrap()
             .energy_left -= 1;
-        self.creatures.push(Some(Creature::new(
+        self.creatures[target_pos.to_index(self.sim_map.width)] = Some(Creature::new(
             &self.species[actor.sid as usize],
             &mut self.sim_map,
             target_pos,
@@ -155,7 +164,7 @@ impl SimulationMap {
                     _ => Gender::Female,
                 }
             },
-        )));
+        ));
     }
     fn update(&mut self) {
         let ref_species: Vec<&Specie> = self.species.iter().collect();
