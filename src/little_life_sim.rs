@@ -206,3 +206,5 @@ impl SimulationMap {
         });
     }
 }
+
+fn main(map_size: CoorUsize) {}
