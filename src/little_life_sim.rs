@@ -49,6 +49,24 @@ impl SimulationMap {
             species,
         }
     }
+    fn is_target_out_of_map(&self, target_pos: CoorUsize) -> bool {
+        target_pos.x >= self.sim_map.width || target_pos.y >= self.sim_map.height
+    }
+    fn is_target_empty(&self, target_pos: CoorUsize) -> bool {
+        self.creatures[target_pos.to_index(self.sim_map.width)].is_none()
+    }
+
+    fn change_map(&mut self, actor: Creature, target_pos: CoorUsize, icon: &str) {
+        if self.is_target_out_of_map(actor.pos) || self.is_target_out_of_map(target_pos) {
+            return;
+        }
+        self.sim_map
+            .change_str_map_val(&actor.pos, config::EMPTY_ICON);
+        self.creatures[actor.pos.to_index(self.sim_map.width)] = None;
+
+        self.sim_map.change_str_map_val(&target_pos, icon);
+        self.creatures[target_pos.to_index(self.sim_map.width)] = Some(actor);
+    }
     fn get_creatures_only(&self) -> Vec<&Creature> {
         self.creatures.par_iter().flatten().collect()
     }
