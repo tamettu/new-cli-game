@@ -208,27 +208,27 @@ impl SimulationMap {
         // ======================================= //
 
         let _ = actions.iter().for_each(|c| {
-            game_tools::debug_tamettu(&format!(
-                "{} {} {}| {:?} | {} {}\n",
-                if let Some(a) = self.creatures[c.actor_pos.to_index(self.sim_map.width)] {
-                    self.species[a.sid as usize].icon.to_string()
-                } else {
-                    "None".to_string()
-                },
-                c.actor_pos.x,
-                c.actor_pos.y,
-                c.action,
-                if let Some(a) = c.target_pos {
-                    a.x as isize
-                } else {
-                    -1
-                },
-                if let Some(a) = c.target_pos {
-                    a.y as isize
-                } else {
-                    -1
-                }
-            ));
+            // game_tools::debug_tamettu(&format!(
+            //     "{} {} {}| {:?} | {} {}\n",
+            //     if let Some(a) = self.creatures[c.actor_pos.to_index(self.sim_map.width)] {
+            //         self.species[a.sid as usize].icon.to_string()
+            //     } else {
+            //         "None".to_string()
+            //     },
+            //     c.actor_pos.x,
+            //     c.actor_pos.y,
+            //     c.action,
+            //     if let Some(a) = c.target_pos {
+            //         a.x as isize
+            //     } else {
+            //         -1
+            //     },
+            //     if let Some(a) = c.target_pos {
+            //         a.y as isize
+            //     } else {
+            //         -1
+            //     }
+            // ));
             match c.action {
                 Movement::Eat => {
                     self.eat(c.actor_pos, c.target_pos.unwrap());
