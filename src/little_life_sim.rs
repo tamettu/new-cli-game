@@ -208,30 +208,27 @@ impl SimulationMap {
         // ======================================= //
 
         let _ = actions.iter().for_each(|c| {
-            game_tools::debug(
-                &format!(
-                    "{} {} {}| {:?} | {} {}\n",
-                    if let Some(a) = self.creatures[c.actor_pos.to_index(self.sim_map.width)] {
-                        self.species[a.sid as usize].icon.to_string()
-                    } else {
-                        "None".to_string()
-                    },
-                    c.actor_pos.x,
-                    c.actor_pos.y,
-                    c.action,
-                    if let Some(a) = c.target_pos {
-                        a.x as isize
-                    } else {
-                        -1
-                    },
-                    if let Some(a) = c.target_pos {
-                        a.y as isize
-                    } else {
-                        -1
-                    }
-                ),
-                false,
-            );
+            game_tools::debug_tamettu(&format!(
+                "{} {} {}| {:?} | {} {}\n",
+                if let Some(a) = self.creatures[c.actor_pos.to_index(self.sim_map.width)] {
+                    self.species[a.sid as usize].icon.to_string()
+                } else {
+                    "None".to_string()
+                },
+                c.actor_pos.x,
+                c.actor_pos.y,
+                c.action,
+                if let Some(a) = c.target_pos {
+                    a.x as isize
+                } else {
+                    -1
+                },
+                if let Some(a) = c.target_pos {
+                    a.y as isize
+                } else {
+                    -1
+                }
+            ));
             match c.action {
                 Movement::Eat => {
                     self.eat(c.actor_pos, c.target_pos.unwrap());
@@ -255,7 +252,7 @@ impl SimulationMap {
 }
 
 pub fn main(map_size: CoorUsize, species: &Vec<Specie>, init_animals_amount: usize) {
-    game_tools::debug("", true);
+    game_tools::debug_override_tamettu("");
     let ref_species: Vec<&Specie> = species.iter().collect();
     let mut sim_map = SimulationMap::new(map_size.x, map_size.y, species.clone());
     for i in species.iter() {
@@ -289,11 +286,10 @@ pub fn main(map_size: CoorUsize, species: &Vec<Specie>, init_animals_amount: usi
     }
     let mut loop_count = 0;
     loop {
-        game_tools::debug("---\n", false);
         sim_map.sim_map.show_map();
         thread::sleep(Duration::from_millis(500));
         sim_map.update(&ref_species);
         loop_count += 1;
-        game_tools::debug(&format!("--- LOOP {} END ---\n", loop_count), false);
+        game_tools::debug_tamettu(&format!("--- LOOP {} END ---\n", loop_count));
     }
 }
