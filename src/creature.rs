@@ -605,13 +605,20 @@ impl Creature {
         }
         if self.step_cd != 0 {
             self.step_cd -= 1;
+            self.energy_left = if self.energy_left == 0 {
+                0
+            } else {
+                self.energy_left - 1
+            };
             return;
         } else {
-            self.step_cd = self.speed
+            self.step_cd = self.speed;
         }
         if self.hp_left + 1 != all_species[self.sid as usize].max_hp {
             self.energy_left -= 1;
             self.hp_left += 1;
+        } else if self.energy_left == 0 {
+            self.hp_left -= 1;
         }
     }
     pub fn get_movement_leader(

@@ -265,17 +265,7 @@ impl Div<isize> for CoorIsize {
         Some(CoorIsize::new(new_x, new_y))
     }
 }
-pub fn debug(text: &str, is_overwrite: bool) {
-    if is_overwrite {
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(is_overwrite)
-            .open("debug.txt")
-            .unwrap();
-        write!(file, "{}", text).unwrap();
-        return;
-    }
+pub fn debug_tamettu(text: &str) {
     let mut file = OpenOptions::new()
         .write(true)
         .append(true)
@@ -283,4 +273,14 @@ pub fn debug(text: &str, is_overwrite: bool) {
         .open("debug.txt")
         .unwrap();
     write!(file, "{}", text).unwrap();
+}
+pub fn debug_override_tamettu(text: &str) {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open("debug.txt")
+        .unwrap();
+    write!(file, "{}", text).unwrap();
+    return;
 }

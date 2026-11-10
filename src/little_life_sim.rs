@@ -202,7 +202,7 @@ impl SimulationMap {
         actions.par_extend(
             creatures
                 .par_iter()
-                .filter_map(|&&c| c.get_movement(&ref_species, &self.sim_map, &creatures)),
+                .filter_map(|&&c| c.get_movement_leader(&ref_species, &self.sim_map, &creatures)),
         );
 
         // ======================================= //
@@ -290,7 +290,7 @@ pub fn main(map_size: CoorUsize, species: &Vec<Specie>, init_animals_amount: usi
     let mut loop_count = 0;
     loop {
         game_tools::debug("---\n", false);
-        sim_map.sim_map.show_map_without_case();
+        sim_map.sim_map.show_map();
         thread::sleep(Duration::from_millis(500));
         sim_map.update(&ref_species);
         loop_count += 1;

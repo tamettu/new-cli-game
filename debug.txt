@@ -1,288 +1,929 @@
 ---
- 4 8| Walk | 5 9
+󱩡 2 4| Walk | 2 4
+󱩡 5 7| Walk | 5 6
+󱩡 13 12| Walk | 14 13
+ 16 10| Walk | 17 10
 --- LOOP 1 END ---
 ---
-󱩡 3 8| Walk | 3 8
- 5 5| Walk | 5 6
-󱩡 6 2| Walk | 7 2
-󱩡 6 3| Walk | 7 2
+󱩡 2 5| Walk | 1 4
+ 3 3| Walk | 4 2
+ 9 8| Walk | 8 7
+ 11 9| Walk | 11 8
 --- LOOP 2 END ---
 ---
+󱩡 2 4| Walk | 3 4
+ 17 10| Walk | 17 11
 --- LOOP 3 END ---
 ---
-󱩡 3 8| Walk | 3 8
-󱩡 7 2| Walk | 6 1
+󱩡 5 6| Walk | 5 6
+ 11 8| Walk | 12 7
+󱩡 14 13| Walk | 13 14
 --- LOOP 4 END ---
 ---
- 5 9| Walk | 6 10
-󱩡 6 3| Walk | 7 2
+󱩡 1 4| Walk | 2 3
+󱩡 3 4| Walk | 2 5
+ 17 11| Walk | 18 11
 --- LOOP 5 END ---
 ---
-󱩡 3 8| Walk | 4 9
- 5 6| Walk | 5 6
-󱩡 6 1| Walk | 7 0
+ 4 2| Walk | 5 3
+ 8 7| Walk | 8 7
+ 12 7| Walk | 12 6
+ 16 11| Walk | 16 12
 --- LOOP 6 END ---
 ---
+󱩡 2 5| Walk | 3 4
+󱩡 5 6| Walk | 5 7
+󱩡 13 14| Walk | 12 13
+ 18 11| Walk | 17 12
 --- LOOP 7 END ---
 ---
-󱩡 4 9| Walk | 4 8
-󱩡 7 0| Walk | 8 0
-󱩡 7 2| Walk | 7 1
+󱩡 2 3| Walk | 3 2
+ 12 6| Walk | 13 6
 --- LOOP 8 END ---
 ---
- 5 9| Walk | 6 8
+󱩡 3 4| Gone | -1 -1
+ 17 12| Walk | 18 13
 --- LOOP 9 END ---
 ---
-󱩡 4 8| Walk | 3 9
- 5 6| Walk | 5 6
-󱩡 8 0| Walk | 7 1
+󱩡 3 2| Gone | -1 -1
+ 5 3| Walk | 6 2
+󱩡 5 7| Walk | 4 7
+ 8 7| Walk | 9 6
+󱩡 12 13| Walk | 13 12
+ 13 6| Walk | 13 6
 --- LOOP 10 END ---
 ---
-󱩡 7 1| Walk | 6 0
+ 18 13| Walk | 17 14
 --- LOOP 11 END ---
 ---
-󱩡 3 9| Walk | 2 10
-󱩡 8 0| Walk | 7 0
+ 13 6| Walk | 13 7
+ 16 12| Walk | 16 13
 --- LOOP 12 END ---
 ---
- 6 8| Walk | 6 9
+󱩡 4 7| Walk | 3 8
+󱩡 13 12| Walk | 13 12
+ 17 14| Walk | 16 14
 --- LOOP 13 END ---
 ---
-󱩡 3 9| Walk | 4 8
- 5 6| Walk | 4 5
-󱩡 6 0| Walk | 6 0
-󱩡 7 0| Walk | 7 0
+ 6 2| Walk | 7 2
+ 9 6| Walk | 8 5
+ 13 7| Walk | 13 7
 --- LOOP 14 END ---
 ---
+ 16 14| Walk | 16 14
 --- LOOP 15 END ---
 ---
-󱩡 4 8| Walk | 4 9
-󱩡 7 0| Walk | 8 0
+󱩡 3 8| Walk | 3 7
+ 13 7| Walk | 14 7
+󱩡 13 12| Walk | 14 11
 --- LOOP 16 END ---
 ---
-󱩡 6 0| Walk | 7 0
- 6 9| Walk | 5 9
+ 16 14| Walk | 16 15
 --- LOOP 17 END ---
 ---
- 4 5| Walk | 3 6
-󱩡 4 9| Walk | 3 10
-󱩡 8 0| Walk | 9 0
+ 7 2| Walk | 6 2
+ 8 5| Walk | 7 6
+ 14 7| Walk | 14 6
+ 16 13| Walk | 15 13
 --- LOOP 18 END ---
 ---
+󱩡 3 7| Walk | 4 7
+ 7 6| Gone | -1 -1
+󱩡 14 11| Walk | 13 10
+ 16 15| Walk | 16 16
 --- LOOP 19 END ---
 ---
-󱩡 4 9| Walk | 4 10
-󱩡 7 0| Walk | 8 0
-󱩡 9 0| Walk | 8 0
+ 14 6| Walk | 14 6
 --- LOOP 20 END ---
 ---
- 5 9| Walk | 5 8
+ 16 16| Walk | 17 16
 --- LOOP 21 END ---
 ---
- 3 6| Walk | 2 7
-󱩡 4 9| Walk | 5 8
-󱩡 9 0| Walk | 10 0
+󱩡 4 7| Walk | 4 7
+ 6 2| Walk | 7 2
+󱩡 13 10| Walk | 12 11
+ 14 6| Walk | 13 5
 --- LOOP 22 END ---
 ---
-󱩡 8 0| Walk | 9 0
+ 17 16| Walk | 17 17
 --- LOOP 23 END ---
 ---
-󱩡 4 9| Walk | 4 10
-󱩡 9 0| Walk | 10 0
+ 13 5| Walk | 14 6
+ 15 13| Walk | 16 14
 --- LOOP 24 END ---
 ---
- 5 8| Walk | 5 7
+󱩡 4 7| Walk | 5 6
+󱩡 12 11| Walk | 11 10
+ 17 17| Walk | 16 16
 --- LOOP 25 END ---
 ---
- 2 7| Walk | 1 8
-󱩡 4 9| Walk | 3 9
-󱩡 8 0| Walk | 9 1
-󱩡 9 0| Walk | 10 0
+ 7 2| Walk | 8 1
+ 14 6| Walk | 15 5
 --- LOOP 26 END ---
 ---
+ 16 16| Walk | 15 17
 --- LOOP 27 END ---
 ---
-󱩡 3 9| Walk | 4 8
-󱩡 9 0| Walk | 10 1
+󱩡 5 6| Walk | 4 6
+󱩡 11 10| Walk | 11 10
+ 15 5| Walk | 14 4
 --- LOOP 28 END ---
 ---
- 5 7| Walk | 5 7
-󱩡 9 1| Walk | 10 0
+ 15 17| Walk | 16 16
 --- LOOP 29 END ---
 ---
- 1 8| Walk | 0 8
-󱩡 4 8| Walk | 5 8
-󱩡 9 0| Walk | 10 1
+ 8 1| Walk | 8 1
+ 14 4| Walk | 14 3
+ 16 14| Walk | 16 14
 --- LOOP 30 END ---
 ---
+󱩡 4 6| Walk | 3 7
+󱩡 11 10| Gone | -1 -1
+ 16 16| Walk | 15 17
 --- LOOP 31 END ---
 ---
-󱩡 5 8| Walk | 6 7
-󱩡 9 0| Walk | 10 0
-󱩡 9 1| Walk | 10 1
+ 14 3| Walk | 15 4
 --- LOOP 32 END ---
 ---
- 5 7| Walk | 5 8
+ 15 17| Walk | 16 18
 --- LOOP 33 END ---
 ---
- 0 8| Walk | 0 8
-󱩡 6 7| Walk | 7 6
-󱩡 9 0| Walk | 10 0
+󱩡 3 7| Walk | 2 8
+ 8 1| Walk | 9 0
+ 15 4| Walk | 15 5
 --- LOOP 34 END ---
 ---
-󱩡 9 1| Walk | 8 0
+ 16 18| Walk | 15 17
 --- LOOP 35 END ---
 ---
-󱩡 7 6| Walk | 7 6
-󱩡 9 0| Walk | 10 0
+ 15 5| Walk | 16 4
+ 16 14| Walk | 15 13
 --- LOOP 36 END ---
 ---
- 5 8| Walk | 4 7
+󱩡 2 8| Walk | 2 9
+ 15 17| Walk | 16 16
 --- LOOP 37 END ---
 ---
- 0 8| Walk | 0 9
-󱩡 7 6| Walk | 8 5
-󱩡 8 0| Walk | 9 1
-󱩡 9 0| Walk | 10 0
+ 9 0| Walk | 8 0
+ 16 4| Walk | 16 3
 --- LOOP 38 END ---
 ---
+ 16 16| Walk | 17 15
 --- LOOP 39 END ---
 ---
-󱩡 8 5| Walk | 8 6
-󱩡 9 0| Walk | 8 0
+󱩡 2 9| Walk | 1 10
+ 16 3| Walk | 16 2
 --- LOOP 40 END ---
 ---
- 4 7| Walk | 4 6
-󱩡 9 1| Walk | 10 0
+󱩡 4 18| Gone | -1 -1
+ 17 15| Walk | 18 14
 --- LOOP 41 END ---
 ---
- 0 9| Walk | 0 8
-󱩡 8 0| Walk | 9 0
-󱩡 8 6| Walk | 9 6
+ 8 0| Walk | 9 0
+ 15 13| Walk | 16 12
+ 16 2| Walk | 15 3
 --- LOOP 42 END ---
 ---
+󱩡 1 10| Walk | 2 9
+ 18 14| Walk | 17 14
 --- LOOP 43 END ---
 ---
-󱩡 9 0| Walk | 10 0
-󱩡 9 1| Walk | 10 0
-󱩡 9 6| Walk | 10 6
+ 15 3| Walk | 16 4
 --- LOOP 44 END ---
 ---
- 4 6| Walk | 5 6
+ 17 14| Walk | 17 15
 --- LOOP 45 END ---
 ---
- 0 8| Walk | 1 8
-󱩡 9 0| Walk | 10 0
-󱩡 9 6| Walk | 10 7
+󱩡 2 9| Walk | 3 8
+ 9 0| Walk | 8 0
+ 16 4| Walk | 15 3
 --- LOOP 46 END ---
 ---
-󱩡 9 1| Walk | 10 0
+ 17 15| Walk | 17 14
 --- LOOP 47 END ---
 ---
-󱩡 9 0| Walk | 9 0
-󱩡 9 6| Walk | 9 5
+ 15 3| Walk | 15 3
+ 16 12| Walk | 16 13
 --- LOOP 48 END ---
 ---
- 5 6| Walk | 4 5
+󱩡 3 8| Walk | 4 9
+ 17 14| Walk | 17 13
 --- LOOP 49 END ---
 ---
- 1 8| Walk | 1 8
-󱩡 9 0| Walk | 9 1
-󱩡 9 1| Walk | 10 2
-󱩡 9 5| Walk | 8 5
+ 8 0| Walk | 9 0
+ 15 3| Walk | 14 4
 --- LOOP 50 END ---
 ---
+󱩡 4 9| Gone | -1 -1
+ 17 13| Walk | 18 13
 --- LOOP 51 END ---
 ---
-󱩡 8 5| Walk | 7 6
-󱩡 9 0| Walk | 10 1
+ 14 4| Walk | 14 4
 --- LOOP 52 END ---
 ---
- 4 5| Walk | 4 5
-󱩡 9 1| Walk | 10 0
+ 18 13| Walk | 19 13
 --- LOOP 53 END ---
 ---
- 1 8| Walk | 2 8
-󱩡 7 6| Walk | 6 7
-󱩡 9 0| Walk | 9 0
+ 9 0| Walk | 9 1
+ 14 4| Walk | 15 5
+ 16 13| Walk | 17 14
 --- LOOP 54 END ---
 ---
+ 19 13| Walk | 20 13
 --- LOOP 55 END ---
 ---
-󱩡 6 7| Walk | 6 8
-󱩡 9 0| Walk | 10 0
-󱩡 9 1| Walk | 10 0
+ 15 5| Walk | 16 5
 --- LOOP 56 END ---
 ---
- 4 5| Walk | 4 5
+ 19 13| Walk | 20 12
 --- LOOP 57 END ---
 ---
- 2 8| Walk | 1 9
-󱩡 6 8| Walk | 7 9
-󱩡 9 0| Walk | 10 1
+ 9 1| Walk | 9 1
+ 16 5| Walk | 15 5
 --- LOOP 58 END ---
 ---
-󱩡 9 1| Walk | 10 2
+ 19 13| Walk | 18 13
 --- LOOP 59 END ---
 ---
-󱩡 7 9| Walk | 8 8
-󱩡 9 0| Walk | 10 0
+ 15 5| Walk | 15 5
+ 17 14| Walk | 17 15
 --- LOOP 60 END ---
 ---
- 4 5| Walk | 4 6
+ 18 13| Walk | 19 14
 --- LOOP 61 END ---
 ---
- 1 9| Walk | 2 10
-󱩡 8 8| Walk | 9 7
-󱩡 9 0| Walk | 10 0
-󱩡 9 1| Walk | 10 0
+ 9 1| Walk | 10 1
+ 15 5| Walk | 15 4
 --- LOOP 62 END ---
 ---
+ 19 14| Walk | 20 15
 --- LOOP 63 END ---
 ---
-󱩡 9 0| Walk | 9 1
-󱩡 9 7| Walk | 8 7
+ 15 4| Walk | 14 4
 --- LOOP 64 END ---
 ---
- 4 6| Walk | 3 5
-󱩡 9 1| Walk | 10 0
+ 19 14| Walk | 18 15
 --- LOOP 65 END ---
 ---
- 1 9| Walk | 0 8
-󱩡 8 7| Walk | 9 8
-󱩡 9 0| Walk | 10 0
+ 10 1| Walk | 9 0
+ 14 4| Walk | 14 4
+ 17 15| Walk | 18 15
 --- LOOP 66 END ---
 ---
+ 18 15| Walk | 17 16
 --- LOOP 67 END ---
 ---
-󱩡 9 0| Walk | 9 0
-󱩡 9 1| Walk | 8 0
-󱩡 9 8| Walk | 9 9
+ 14 4| Walk | 15 3
 --- LOOP 68 END ---
 ---
- 3 5| Walk | 4 4
+ 17 16| Walk | 18 15
 --- LOOP 69 END ---
 ---
- 0 8| Walk | 0 7
-󱩡 9 0| Walk | 10 1
-󱩡 9 9| Walk | 10 8
+ 9 0| Walk | 8 1
+ 15 3| Walk | 16 3
 --- LOOP 70 END ---
 ---
-󱩡 8 0| Walk | 9 0
+ 18 15| Walk | 17 15
 --- LOOP 71 END ---
 ---
-󱩡 9 0| Walk | 10 1
-󱩡 9 9| Walk | 10 8
+ 16 3| Walk | 16 4
+ 17 15| Walk | 16 16
 --- LOOP 72 END ---
 ---
- 4 4| Walk | 3 5
+ 18 15| Walk | 19 16
 --- LOOP 73 END ---
 ---
- 0 7| Walk | 0 8
-󱩡 8 0| Walk | 7 1
-󱩡 9 0| Walk | 10 0
-󱩡 9 9| Walk | 8 9
+ 8 1| Walk | 9 0
+ 16 4| Walk | 17 5
 --- LOOP 74 END ---
 ---
+ 19 16| Walk | 19 16
 --- LOOP 75 END ---
+---
+ 17 5| Walk | 18 6
+--- LOOP 76 END ---
+---
+ 19 16| Walk | 18 17
+--- LOOP 77 END ---
+---
+ 9 0| Walk | 9 1
+ 16 16| Walk | 17 15
+ 18 6| Walk | 17 7
+--- LOOP 78 END ---
+---
+ 18 17| Walk | 17 18
+--- LOOP 79 END ---
+---
+ 17 7| Walk | 16 6
+--- LOOP 80 END ---
+---
+ 17 18| Walk | 17 17
+--- LOOP 81 END ---
+---
+ 9 1| Walk | 10 0
+ 16 6| Walk | 15 7
+--- LOOP 82 END ---
+---
+ 17 17| Walk | 18 16
+--- LOOP 83 END ---
+---
+ 15 7| Walk | 15 6
+ 17 15| Walk | 18 16
+--- LOOP 84 END ---
+---
+ 18 16| Walk | 17 17
+--- LOOP 85 END ---
+---
+ 10 0| Walk | 10 0
+ 15 6| Walk | 14 5
+--- LOOP 86 END ---
+---
+ 17 17| Walk | 16 16
+--- LOOP 87 END ---
+---
+ 14 5| Walk | 13 4
+--- LOOP 88 END ---
+---
+ 16 16| Walk | 17 17
+--- LOOP 89 END ---
+---
+ 10 0| Walk | 9 0
+ 13 4| Walk | 13 5
+ 17 15| Walk | 16 16
+--- LOOP 90 END ---
+---
+ 17 17| Walk | 16 16
+--- LOOP 91 END ---
+---
+ 13 5| Walk | 12 4
+--- LOOP 92 END ---
+---
+ 17 17| Walk | 18 18
+--- LOOP 93 END ---
+---
+ 9 0| Walk | 10 1
+ 12 4| Walk | 11 5
+--- LOOP 94 END ---
+---
+ 18 18| Walk | 18 18
+--- LOOP 95 END ---
+---
+ 11 5| Walk | 10 5
+ 16 16| Walk | 17 15
+--- LOOP 96 END ---
+---
+ 5 18| Gone | -1 -1
+ 18 18| Walk | 19 18
+--- LOOP 97 END ---
+---
+ 10 1| Walk | 10 0
+ 10 5| Walk | 9 5
+--- LOOP 98 END ---
+---
+ 19 18| Walk | 19 19
+--- LOOP 99 END ---
+---
+ 9 5| Walk | 10 5
+--- LOOP 100 END ---
+---
+ 19 19| Walk | 20 20
+--- LOOP 101 END ---
+---
+ 10 0| Walk | 10 0
+ 10 5| Walk | 10 6
+ 17 15| Walk | 18 16
+--- LOOP 102 END ---
+---
+ 19 19| Walk | 20 18
+--- LOOP 103 END ---
+---
+ 10 6| Walk | 10 5
+--- LOOP 104 END ---
+---
+ 19 19| Walk | 18 18
+--- LOOP 105 END ---
+---
+ 10 0| Walk | 10 1
+ 10 5| Walk | 9 6
+--- LOOP 106 END ---
+---
+ 18 18| Walk | 17 18
+--- LOOP 107 END ---
+---
+ 9 6| Walk | 8 6
+ 18 16| Walk | 19 17
+--- LOOP 108 END ---
+---
+ 17 18| Walk | 16 18
+--- LOOP 109 END ---
+---
+ 8 6| Walk | 8 5
+ 10 1| Walk | 10 0
+--- LOOP 110 END ---
+---
+ 16 18| Walk | 15 18
+--- LOOP 111 END ---
+---
+ 8 5| Walk | 7 6
+--- LOOP 112 END ---
+---
+ 15 18| Walk | 16 19
+--- LOOP 113 END ---
+---
+ 7 6| Walk | 7 5
+ 10 0| Walk | 9 0
+ 19 17| Walk | 20 16
+--- LOOP 114 END ---
+---
+ 16 19| Walk | 15 20
+--- LOOP 115 END ---
+---
+ 7 5| Walk | 7 6
+--- LOOP 116 END ---
+---
+ 16 19| Walk | 16 20
+--- LOOP 117 END ---
+---
+ 7 6| Walk | 7 7
+ 9 0| Walk | 9 0
+--- LOOP 118 END ---
+---
+ 16 19| Walk | 17 18
+--- LOOP 119 END ---
+---
+ 7 7| Walk | 7 6
+ 19 17| Walk | 20 18
+--- LOOP 120 END ---
+---
+ 17 18| Walk | 18 19
+--- LOOP 121 END ---
+---
+ 7 6| Walk | 7 7
+ 9 0| Walk | 9 1
+--- LOOP 122 END ---
+---
+ 18 19| Walk | 17 19
+--- LOOP 123 END ---
+---
+ 7 7| Walk | 6 7
+--- LOOP 124 END ---
+---
+ 17 19| Walk | 16 18
+--- LOOP 125 END ---
+---
+ 6 7| Walk | 7 6
+ 9 1| Walk | 9 2
+ 19 17| Walk | 19 17
+--- LOOP 126 END ---
+---
+ 16 18| Walk | 16 18
+--- LOOP 127 END ---
+---
+ 7 6| Walk | 7 6
+--- LOOP 128 END ---
+---
+ 16 18| Walk | 17 18
+--- LOOP 129 END ---
+---
+ 7 6| Walk | 6 5
+ 9 2| Walk | 9 2
+--- LOOP 130 END ---
+---
+ 17 18| Walk | 16 17
+--- LOOP 131 END ---
+---
+ 6 5| Walk | 5 6
+ 19 17| Walk | 18 18
+--- LOOP 132 END ---
+---
+ 16 17| Walk | 17 17
+--- LOOP 133 END ---
+---
+ 5 6| Walk | 4 6
+ 9 2| Walk | 10 2
+--- LOOP 134 END ---
+---
+ 17 17| Walk | 16 18
+--- LOOP 135 END ---
+---
+ 4 6| Walk | 3 6
+--- LOOP 136 END ---
+---
+ 16 18| Walk | 15 17
+--- LOOP 137 END ---
+---
+ 3 6| Walk | 4 7
+ 10 2| Walk | 11 1
+ 18 18| Walk | 18 19
+--- LOOP 138 END ---
+---
+ 15 17| Walk | 14 18
+--- LOOP 139 END ---
+---
+ 4 7| Walk | 4 7
+--- LOOP 140 END ---
+---
+ 14 18| Walk | 13 19
+--- LOOP 141 END ---
+---
+ 4 7| Walk | 5 6
+ 11 1| Walk | 10 2
+--- LOOP 142 END ---
+---
+ 13 19| Walk | 12 20
+--- LOOP 143 END ---
+---
+ 5 6| Walk | 4 7
+ 18 19| Walk | 19 20
+--- LOOP 144 END ---
+---
+ 13 19| Walk | 13 20
+--- LOOP 145 END ---
+---
+ 4 7| Walk | 5 8
+ 10 2| Walk | 11 1
+--- LOOP 146 END ---
+---
+ 13 19| Walk | 13 18
+--- LOOP 147 END ---
+---
+ 5 8| Walk | 6 9
+--- LOOP 148 END ---
+---
+ 13 18| Walk | 12 17
+--- LOOP 149 END ---
+---
+ 6 9| Walk | 7 9
+ 11 1| Walk | 11 0
+ 18 19| Walk | 17 19
+--- LOOP 150 END ---
+---
+ 12 17| Walk | 13 18
+--- LOOP 151 END ---
+---
+ 7 9| Walk | 8 9
+--- LOOP 152 END ---
+---
+ 11 0| Gone | -1 -1
+ 13 18| Walk | 14 17
+--- LOOP 153 END ---
+---
+ 8 9| Walk | 9 10
+--- LOOP 154 END ---
+---
+ 14 17| Walk | 15 17
+--- LOOP 155 END ---
+---
+ 9 10| Walk | 8 9
+ 17 19| Walk | 17 20
+--- LOOP 156 END ---
+---
+ 15 17| Walk | 16 17
+--- LOOP 157 END ---
+---
+ 8 9| Walk | 9 9
+--- LOOP 158 END ---
+---
+ 16 17| Walk | 17 16
+--- LOOP 159 END ---
+---
+ 9 9| Walk | 10 9
+--- LOOP 160 END ---
+---
+ 17 16| Walk | 18 16
+--- LOOP 161 END ---
+---
+ 10 9| Walk | 9 10
+ 17 19| Walk | 16 19
+--- LOOP 162 END ---
+---
+ 18 16| Walk | 19 15
+--- LOOP 163 END ---
+---
+ 9 10| Walk | 9 10
+ 16 19| Gone | -1 -1
+--- LOOP 164 END ---
+---
+ 19 15| Walk | 19 15
+--- LOOP 165 END ---
+---
+ 9 10| Walk | 10 10
+--- LOOP 166 END ---
+---
+ 19 15| Walk | 20 16
+--- LOOP 167 END ---
+---
+ 10 10| Walk | 11 11
+--- LOOP 168 END ---
+---
+ 19 15| Walk | 19 14
+--- LOOP 169 END ---
+---
+ 11 11| Walk | 11 11
+--- LOOP 170 END ---
+---
+ 19 14| Walk | 20 13
+--- LOOP 171 END ---
+---
+ 11 11| Walk | 11 11
+--- LOOP 172 END ---
+---
+ 19 14| Walk | 18 14
+--- LOOP 173 END ---
+---
+ 11 11| Walk | 12 11
+--- LOOP 174 END ---
+---
+ 18 14| Walk | 17 14
+--- LOOP 175 END ---
+---
+ 12 11| Walk | 12 12
+--- LOOP 176 END ---
+---
+ 17 14| Walk | 16 15
+--- LOOP 177 END ---
+---
+ 12 12| Walk | 11 13
+--- LOOP 178 END ---
+---
+ 16 15| Walk | 17 16
+--- LOOP 179 END ---
+---
+ 11 13| Walk | 12 14
+--- LOOP 180 END ---
+---
+ 17 16| Walk | 17 16
+--- LOOP 181 END ---
+---
+ 12 14| Walk | 13 13
+--- LOOP 182 END ---
+---
+ 17 16| Walk | 18 17
+--- LOOP 183 END ---
+---
+ 13 13| Walk | 13 14
+--- LOOP 184 END ---
+---
+ 18 17| Walk | 19 18
+--- LOOP 185 END ---
+---
+ 13 14| Walk | 12 14
+--- LOOP 186 END ---
+---
+ 19 18| Walk | 19 18
+--- LOOP 187 END ---
+---
+ 12 14| Walk | 11 15
+--- LOOP 188 END ---
+---
+ 19 18| Walk | 20 18
+--- LOOP 189 END ---
+---
+ 11 15| Walk | 11 14
+--- LOOP 190 END ---
+---
+ 19 18| Walk | 20 19
+--- LOOP 191 END ---
+---
+ 11 14| Walk | 10 14
+--- LOOP 192 END ---
+---
+ 19 18| Walk | 20 19
+--- LOOP 193 END ---
+---
+ 10 14| Walk | 9 14
+--- LOOP 194 END ---
+---
+ 19 18| Walk | 19 17
+--- LOOP 195 END ---
+---
+ 9 14| Walk | 8 14
+--- LOOP 196 END ---
+---
+ 19 17| Walk | 20 18
+--- LOOP 197 END ---
+---
+ 8 14| Walk | 7 15
+--- LOOP 198 END ---
+---
+ 19 17| Walk | 18 17
+--- LOOP 199 END ---
+---
+ 7 15| Walk | 7 14
+--- LOOP 200 END ---
+---
+ 18 17| Walk | 17 17
+--- LOOP 201 END ---
+---
+ 7 14| Walk | 8 13
+--- LOOP 202 END ---
+---
+ 17 17| Walk | 18 16
+--- LOOP 203 END ---
+---
+ 8 13| Walk | 7 12
+--- LOOP 204 END ---
+---
+ 18 16| Walk | 17 15
+--- LOOP 205 END ---
+---
+ 7 12| Walk | 6 11
+--- LOOP 206 END ---
+---
+ 17 15| Walk | 16 15
+--- LOOP 207 END ---
+---
+ 6 11| Walk | 6 10
+--- LOOP 208 END ---
+---
+ 16 15| Walk | 17 14
+--- LOOP 209 END ---
+---
+ 6 10| Walk | 5 10
+--- LOOP 210 END ---
+---
+ 17 14| Walk | 17 14
+--- LOOP 211 END ---
+---
+ 5 10| Walk | 6 9
+--- LOOP 212 END ---
+---
+ 17 14| Walk | 16 15
+--- LOOP 213 END ---
+---
+ 6 9| Walk | 6 8
+--- LOOP 214 END ---
+---
+ 16 15| Walk | 17 15
+--- LOOP 215 END ---
+---
+ 6 8| Walk | 7 8
+--- LOOP 216 END ---
+---
+ 17 15| Walk | 18 14
+--- LOOP 217 END ---
+---
+ 7 8| Walk | 7 9
+--- LOOP 218 END ---
+---
+ 18 14| Walk | 18 14
+--- LOOP 219 END ---
+---
+ 7 9| Walk | 6 8
+--- LOOP 220 END ---
+---
+ 18 14| Walk | 19 13
+--- LOOP 221 END ---
+---
+ 6 8| Walk | 6 9
+--- LOOP 222 END ---
+---
+ 19 13| Walk | 18 13
+--- LOOP 223 END ---
+---
+ 6 9| Walk | 6 8
+--- LOOP 224 END ---
+---
+ 18 13| Walk | 19 13
+--- LOOP 225 END ---
+---
+ 6 8| Walk | 7 7
+--- LOOP 226 END ---
+---
+ 19 13| Walk | 18 14
+--- LOOP 227 END ---
+---
+ 7 7| Walk | 7 6
+--- LOOP 228 END ---
+---
+ 18 14| Walk | 17 13
+--- LOOP 229 END ---
+---
+ 7 6| Walk | 8 6
+--- LOOP 230 END ---
+---
+ 17 13| Walk | 16 14
+--- LOOP 231 END ---
+---
+ 8 6| Walk | 7 5
+--- LOOP 232 END ---
+---
+ 16 14| Gone | -1 -1
+--- LOOP 233 END ---
+---
+ 7 5| Walk | 7 4
+--- LOOP 234 END ---
+---
+--- LOOP 235 END ---
+---
+ 7 4| Walk | 6 5
+--- LOOP 236 END ---
+---
+--- LOOP 237 END ---
+---
+ 6 5| Walk | 6 4
+--- LOOP 238 END ---
+---
+--- LOOP 239 END ---
+---
+ 6 4| Walk | 7 5
+--- LOOP 240 END ---
+---
+--- LOOP 241 END ---
+---
+ 7 5| Walk | 8 4
+--- LOOP 242 END ---
+---
+--- LOOP 243 END ---
+---
+ 8 4| Walk | 8 4
+--- LOOP 244 END ---
+---
+--- LOOP 245 END ---
+---
+ 8 4| Walk | 8 5
+--- LOOP 246 END ---
+---
+--- LOOP 247 END ---
+---
+ 8 5| Walk | 8 4
+--- LOOP 248 END ---
+---
+--- LOOP 249 END ---
+---
+ 8 4| Walk | 7 5
+--- LOOP 250 END ---
+---
+--- LOOP 251 END ---
+---
+ 7 5| Gone | -1 -1
+--- LOOP 252 END ---
+---
+--- LOOP 253 END ---
+---
+--- LOOP 254 END ---
+---
+--- LOOP 255 END ---
+---
+--- LOOP 256 END ---
+---
+--- LOOP 257 END ---
+---
+--- LOOP 258 END ---
+---
+--- LOOP 259 END ---
+---
+--- LOOP 260 END ---
+---
+--- LOOP 261 END ---
+---
+--- LOOP 262 END ---
+---
+--- LOOP 263 END ---
+---
+--- LOOP 264 END ---
+---
+--- LOOP 265 END ---
+---
+--- LOOP 266 END ---
+---
+--- LOOP 267 END ---
+---
+--- LOOP 268 END ---
+---
+--- LOOP 269 END ---
+---
+--- LOOP 270 END ---
+---
+--- LOOP 271 END ---
+---
+--- LOOP 272 END ---
+---
+--- LOOP 273 END ---
+---
+--- LOOP 274 END ---
+---
+--- LOOP 275 END ---
+---
+--- LOOP 276 END ---
+---
+--- LOOP 277 END ---
+---
+--- LOOP 278 END ---
+---
+--- LOOP 279 END ---
+---
+--- LOOP 280 END ---
+---
+--- LOOP 281 END ---
+---
+--- LOOP 282 END ---
+---
+--- LOOP 283 END ---
+---
+--- LOOP 284 END ---
+---
+--- LOOP 285 END ---
+---
+--- LOOP 286 END ---
 ---
