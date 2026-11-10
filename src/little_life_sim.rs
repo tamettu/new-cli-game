@@ -148,7 +148,9 @@ impl SimulationMap {
         let _ = self.creatures[target_coor.to_index(self.sim_map.width)]
             .unwrap()
             .energy_left
-            .strict_sub((self.species[target.sid as usize].max_energy as f32 * 0.9) as usize + 1);
+            .saturating_sub(
+                (self.species[target.sid as usize].max_energy as f32 * 0.9) as usize + 1,
+            );
         let Some(Some(actor)) = self
             .creatures
             .get_mut(actor_pos.to_index(self.sim_map.width))
@@ -199,36 +201,34 @@ impl SimulationMap {
         let mut creatures = self.get_creatures_only();
         creatures.sort_unstable_by_key(|&c| c.pos);
         let mut actions: Vec<ActorMovement> = Vec::with_capacity(creatures.len());
-        actions.par_extend(
-            creatures
-                .par_iter()
-                .filter_map(|&&c| c.get_movement_leader(&ref_species, &self.sim_map, &creatures)),
-        );
+        actions.extend(creatures.iter().filter_map(|&&c| {
+            c.get_movement_leader_debug(&ref_species, &self.sim_map, &creatures)
+        }));
 
         // ======================================= //
 
         let _ = actions.iter().for_each(|c| {
-            // game_tools::debug_tamettu(&format!(
-            //     "{} {} {}| {:?} | {} {}\n",
-            //     if let Some(a) = self.creatures[c.actor_pos.to_index(self.sim_map.width)] {
-            //         self.species[a.sid as usize].icon.to_string()
-            //     } else {
-            //         "None".to_string()
-            //     },
-            //     c.actor_pos.x,
-            //     c.actor_pos.y,
-            //     c.action,
-            //     if let Some(a) = c.target_pos {
-            //         a.x as isize
-            //     } else {
-            //         -1
-            //     },
-            //     if let Some(a) = c.target_pos {
-            //         a.y as isize
-            //     } else {
-            //         -1
-            //     }
-            // ));
+            game_tools::debug_tamettu(&format!(
+                "{} {} {}| {:?} | {} {}\n",
+                if let Some(a) = self.creatures[c.actor_pos.to_index(self.sim_map.width)] {
+                    self.species[a.sid as usize].icon.to_string()
+                } else {
+                    "None".to_string()
+                },
+                c.actor_pos.x,
+                c.actor_pos.y,
+                c.action,
+                if let Some(a) = c.target_pos {
+                    a.x as isize
+                } else {
+                    -1
+                },
+                if let Some(a) = c.target_pos {
+                    a.y as isize
+                } else {
+                    -1
+                }
+            ));
             match c.action {
                 Movement::Eat => {
                     self.eat(c.actor_pos, c.target_pos.unwrap());
@@ -286,8 +286,8 @@ pub fn main(map_size: CoorUsize, species: &Vec<Specie>, init_animals_amount: usi
     }
     let mut loop_count = 0;
     loop {
-        sim_map.sim_map.show_map();
-        thread::sleep(Duration::from_millis(500));
+        sim_map.sim_map.show_map_without_case();
+        thread::sleep(Duration::from_millis(100));
         sim_map.update(&ref_species);
         loop_count += 1;
         game_tools::debug_tamettu(&format!("--- LOOP {} END ---\n", loop_count));

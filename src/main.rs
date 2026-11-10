@@ -21,7 +21,7 @@ fn main() {
         Specie::new(
             10,
             3,
-            50,
+            300,
             6,
             3,
             5,
@@ -30,18 +30,18 @@ fn main() {
             DietaryCategories::Herbivorous,
             &mut id_generator,
         ),
-        Specie::new(
-            22,
-            6,
-            150,
-            8,
-            7,
-            4,
-            '',
-            TrophicLevel::Secondary,
-            DietaryCategories::Carnivorous,
-            &mut id_generator,
-        ),
+        // Specie::new(
+        //     22,
+        //     6,
+        //     700,
+        //     8,
+        //     7,
+        //     4,
+        //     '',
+        //     TrophicLevel::Secondary,
+        //     DietaryCategories::Carnivorous,
+        //     &mut id_generator,
+        // ),
         Specie::new(
             50,
             0,
@@ -55,7 +55,7 @@ fn main() {
             &mut id_generator,
         ),
     ];
-    little_life_sim::main(CoorUsize::new(20, 20), &species, 7);
+    little_life_sim::main(CoorUsize::new(20, 20), &species, 1);
     // let mut ai_values = AiValues::default();
     // let test: HashMap<String, Decimal> = serde_json::from_reader(reader).unwrap();
     // for (k, v) in test {

@@ -99,11 +99,10 @@ impl Creature {
             if original_value == 0 {
                 return 0;
             }
-            match rand::random_range(0_u8..3) {
-                0 => (original_value as f32 * rand::random_range(0.8..=1.0)) as usize,
-                1 => (original_value as f32 * rand::random_range(0.5..=0.7)) as usize,
-                2 => (original_value as f32 * rand::random_range(0.0..=0.4)) as usize,
-                _ => 10000000,
+            match rand::random_range(0..100) {
+                a if a >= 60 => (original_value as f32 * rand::random_range(0.8..=1.0)) as usize,
+                a if a >= 20 => (original_value as f32 * rand::random_range(0.5..=0.7)) as usize,
+                _ => (original_value as f32 * rand::random_range(0.0..=0.4)).round() as usize,
             }
         };
         let (
@@ -499,24 +498,19 @@ impl Creature {
             CoorIsize::new(1, -1),
             CoorIsize::new(-1, 1),
         ];
-        let all_dir_len = all_dir.len();
-        let mut target_dir = all_dir_len + 1;
-        for i in 0..all_dir_len {
+        let mut target_dir = None;
+        for i in 0..all_dir.len() {
             let Some(new_coor) = (self.pos.to_coor_isize() + all_dir[i])
                 .and_then(|c| Some(c.to_coor_usize()))
-                .filter(|c| c.x < map.width || c.y < map.height)
+                .filter(|c| c.x < map.width && c.y < map.height)
             else {
                 continue;
             };
             if target_list.contains(&new_coor) {
-                target_dir = i;
+                target_dir = Some(new_coor);
             }
         }
-        if target_dir > all_dir_len {
-            None
-        } else {
-            Some(target_list[target_dir])
-        }
+        target_dir
     }
     fn get_nearby_space(&self, map: &gen_map::GameMap) -> Option<CoorUsize> {
         if self.gender == Male || self.energy_left == 0 {
@@ -537,7 +531,7 @@ impl Creature {
         for i in all_dir.iter() {
             let Some(new_coor) = (self.pos.to_coor_isize() + *i)
                 .and_then(|c| Some(c.to_coor_usize()))
-                .filter(|c| c.x < map.width || c.y < map.height)
+                .filter(|c| c.x < map.width && c.y < map.height)
             else {
                 continue;
             };
@@ -602,7 +596,7 @@ impl Creature {
         if self.hp_left == 0 {
             return;
         }
-        if self.energy_left == 0 {
+        if self.energy_left <= all_species[self.sid as usize].max_energy / 2 {
             self.hp_left -= 1;
         } else if self.energy_left != 0 && self.hp_left < all_species[self.sid as usize].max_hp {
             self.energy_left -= 1;
@@ -682,14 +676,14 @@ impl Creature {
         good_weight *= all_species[self.sid as usize].detect_positive_range;
         bad_weight *= all_species[self.sid as usize].detect_negative_range;
         match rand::random_range(0..=(good_weight + bad_weight)) {
-            a if a <= good_weight => self.get_movement_good_weight(
+            a if a <= good_weight => self.get_movement_good_weight_debug(
                 all_species,
                 all_food,
                 all_kinds,
                 all_eatale_animals,
                 map,
             ),
-            a if a > good_weight => self.get_movement_bad_weight(all_enemies),
+            a if a > good_weight => self.get_movement_bad_weight_debug(all_enemies),
             _ => Some(ActorMovement::new(
                 self.pos,
                 Walk,
@@ -825,8 +819,8 @@ impl Creature {
         sorted_creatures: &[&Creature],
     ) -> Option<ActorMovement> {
         debug_tamettu(&format!(
-            "pos{},{}|hp{}|energy{}|step_cd{}\n",
-            self.pos.x, self.pos.y, self.hp_left, self.energy_left, self.step_cd
+            "pos{},{}|hp{}|energy{}|step_cd{}|max_step_cd{}\n",
+            self.pos.x, self.pos.y, self.hp_left, self.energy_left, self.step_cd, self.speed
         ));
         if self.energy_left == 0 && self.hp_left == 0 {
             debug_tamettu("creature gone\n");
@@ -898,7 +892,7 @@ impl Creature {
         match rand::random_range(0..=(good_weight + bad_weight)) {
             a if a <= good_weight => {
                 debug_tamettu("good\n");
-                self.get_movement_good_weight(
+                self.get_movement_good_weight_debug(
                     all_species,
                     all_food,
                     all_kinds,
@@ -908,7 +902,7 @@ impl Creature {
             }
             a if a > good_weight => {
                 debug_tamettu("bad\n");
-                self.get_movement_bad_weight(all_enemies)
+                self.get_movement_bad_weight_debug(all_enemies)
             }
             _ => {
                 debug_tamettu("no good no bad random walk\n");
@@ -935,92 +929,20 @@ impl Creature {
         all_eatale_animals: Option<Vec<CoorUsize>>,
         map: &gen_map::GameMap,
     ) -> Option<ActorMovement> {
-        debug_tamettu("choiced good\n");
-        let closest_food: Option<CoorUsize> = (self.energy_left
-            <= all_species[self.sid as usize].max_energy / 3)
-            .then_some(all_food.clone())
+        debug_tamettu("start check 3 ass stuffs: eat-able? sex-able? atk-food-able?\n");
+        let go_eat = all_food.and_then(|c| self.is_able_to_eat(&c, map));
+        let go_mating = all_kinds.and_then(|c| self.is_able_to_mating(&c, map));
+        let go_atk_food = all_eatale_animals.and_then(|c| self.is_able_to_atk(&c, map));
+        debug_tamettu(&format!(
+            "eat:{}|sex:{}|atk:{}\n",
+            if go_eat.is_none() { "N" } else { "Y" },
+            if go_mating.is_none() { "N" } else { "Y" },
+            if go_atk_food.is_none() { "N" } else { "Y" }
+        ));
+        let all_possible_movement: Vec<&ActorMovement> = vec![go_eat, go_mating, go_atk_food]
+            .iter()
             .flatten()
-            .and_then(|cs| {
-                debug_tamettu("have cloest food (already dead animals)\n");
-                cs.par_iter().map(|c| c.abs_usize(self.pos)).min()
-            });
-        let closest_kind: Option<CoorUsize> = (self.mating_cold_down == 0)
-            .then_some(all_kinds.clone())
-            .flatten()
-            .and_then(|cs| {
-                debug_tamettu("have cloest  kind\n");
-                cs.par_iter().map(|c| c.abs_usize(self.pos)).min()
-            });
-        let check_food = |a: &CoorUsize| -> Option<ActorMovement> {
-            if let Some(a) = all_food.and_then(|c| self.is_able_to_eat(&c, map)) {
-                debug_tamettu("have eatable\n");
-                return Some(a);
-            }
-            debug_tamettu("no  eatable\n");
-            if let Some(a) = all_eatale_animals.and_then(|c| self.is_able_to_atk(&c, map)) {
-                debug_tamettu("have atkable\n");
-                return Some(a);
-            }
-            debug_tamettu("no atkable\n");
-            if let Some(new_coor) = (self.pos.vector_to(a.to_coor_isize())
-                + self.pos.to_coor_isize())
-            .and_then(|c| Some(c.to_coor_usize()))
-            {
-                debug_tamettu("random walk have legal coor\n");
-                return Some(ActorMovement::new(self.pos, Walk, Some(new_coor)));
-            }
-            debug_tamettu("random walk no legal coor\n");
-            return None;
-        };
-        let check_kinds = |b: &CoorUsize| -> Option<ActorMovement> {
-            if let Some(b) = self.is_able_to_mating(&all_kinds.unwrap(), map) {
-                debug_tamettu("have mating-able\n");
-                return Some(b);
-            }
-            debug_tamettu("no mating-able\n");
-            if let Some(new_coor) = (self.pos.vector_to(b.to_coor_isize())
-                + self.pos.to_coor_isize())
-            .and_then(|c| Some(c.to_coor_usize()))
-            {
-                debug_tamettu("random walk have coor\n");
-                return Some(ActorMovement::new(self.pos, Walk, Some(new_coor)));
-            }
-            debug_tamettu("random walk no coor\n");
-            return None;
-        };
-        match (closest_food, closest_kind) {
-            (Some(a), Some(b)) => {
-                debug_tamettu("have eat and sex\n");
-                if a < b {
-                    check_food(&a)
-                } else {
-                    check_kinds(&b)
-                }
-            }
-            (Some(a), None) => {
-                debug_tamettu("only eat\n");
-                check_food(&a)
-            }
-            (None, Some(b)) => {
-                debug_tamettu("only sex\n");
-                check_kinds(&b)
-            }
-            _ => {
-                debug_tamettu("didnt choice eat or sex\n");
-                return Some(ActorMovement::new(
-                    self.pos,
-                    Walk,
-                    Some(CoorUsize::new(
-                        self.pos
-                            .x
-                            .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
-                        self.pos
-                            .y
-                            .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
-                    )),
-                ));
-            }
-        }
+            .collect();
     }
     fn get_movement_bad_weight_debug(
         &self,
