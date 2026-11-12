@@ -1,5 +1,6 @@
 use crate::config::{self};
 use crate::creature::Gender::Male;
+use crate::creature::TrophicLevel::Producer;
 use crate::game_tools::{self, CoorIsize};
 use crate::game_tools::{CoorUsize, debug_tamettu};
 use crate::gen_map::{self};
@@ -118,7 +119,7 @@ impl Creature {
                 0
             } else {
                 (specie.max_mating_cold_down as f32 //jump to next line you ass lsp
-                    * rand::random_range(0.5..=1.0)) as usize
+                    * rand::random_range(1.0..=2.0)) as usize
             },
         );
         let sid = specie.get_sid();
@@ -486,7 +487,7 @@ impl Creature {
         target_list: &Vec<CoorUsize>,
         map: &gen_map::GameMap,
     ) -> Option<CoorUsize> {
-        if self.gender == Male || self.energy_left == 0 {
+        if self.gender == Male || self.energy_left == 0 || self.mating_cold_down != 0 {
             return None;
         }
 
@@ -566,7 +567,7 @@ impl Creature {
         if let Some(a) = self.get_nearby_creature(all_eatable_animals, map) {
             Some(ActorMovement::new(
                 self.pos,
-                crate::little_life_sim::Movement::Eat,
+                crate::little_life_sim::Movement::Atk,
                 Some(a),
             ))
         } else {
@@ -584,7 +585,7 @@ impl Creature {
         ) {
             Some(ActorMovement::new(
                 self.pos,
-                crate::little_life_sim::Movement::Eat,
+                crate::little_life_sim::Movement::Mating,
                 Some(b),
             ))
         } else {
@@ -837,6 +838,16 @@ impl Creature {
             "pos{},{}|hp{}|energy{}|step_cd{}|max_step_cd{}\n",
             self.pos.x, self.pos.y, self.hp_left, self.energy_left, self.step_cd, self.speed
         ));
+        if all_species[self.sid as usize].trophic_level == Producer && self.mating_cold_down == 0 {
+            return Some(ActorMovement::new(
+                self.pos,
+                crate::little_life_sim::Movement::Mating,
+                Some(CoorUsize::new(
+                    rand::random_range(0..map.width),
+                    rand::random_range(0..map.height),
+                )),
+            ));
+        }
         if self.energy_left == 0 && self.hp_left == 0 {
             debug_tamettu("creature gone\n");
             return Some(ActorMovement::new(
