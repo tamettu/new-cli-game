@@ -103,10 +103,7 @@ impl SimulationMap {
         &self.creatures[target_pos.to_index(self.sim_map.width)]
     }
     fn atk(&mut self, actor_pos: CoorUsize, target_pos: CoorUsize) {
-        if self.is_target_out_of_map(target_pos) {
-            return;
-        }
-        let Some(target) = self.creatures[target_pos.to_index(self.sim_map.width)].clone() else {
+        let Some(target) = self.creatures[target_pos.to_index(self.sim_map.width)].as_ref() else {
             return;
         };
         let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)].as_ref() else {
@@ -115,16 +112,13 @@ impl SimulationMap {
         if actor.energy_left == 0 || target.hp_left == 0 {
             return;
         }
-        self.creatures[actor_pos.to_index(self.sim_map.width)]
-            .as_mut()
-            .unwrap()
-            .energy_left -= 1;
-        let damage = (self.species[target.sid as usize].max_hp as f32 * 0.1) as usize + 1;
-        let new_target_hp = target.hp_left.saturating_sub(damage);
-        self.creatures[target_pos.to_index(self.sim_map.width)]
-            .as_mut()
-            .unwrap()
-            .hp_left = new_target_hp;
+        let damage = (self.species[target.sid as usize].max_hp as f32 * 0.4) as usize + 1;
+        if let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)].as_mut() {
+            actor.energy_left -= 1;
+        }
+        if let Some(target) = self.creatures[target_pos.to_index(self.sim_map.width)].as_mut() {
+            target.hp_left = target.hp_left.saturating_sub(damage);
+        }
     }
     fn walk(&mut self, actor_pos: CoorUsize, new_pos: CoorUsize) {
         if self.is_target_out_of_map(new_pos) || !self.is_target_empty(new_pos) {
@@ -146,28 +140,26 @@ impl SimulationMap {
         let Some(target) = self.creatures[target_coor.to_index(self.sim_map.width)] else {
             return;
         };
-        let _ = self.creatures[target_coor.to_index(self.sim_map.width)]
-            .unwrap()
-            .energy_left
-            .saturating_sub(
-                (self.species[target.sid as usize].max_energy as f32 * 0.9) as usize + 1,
-            );
-        let Some(Some(actor)) = self
-            .creatures
-            .get_mut(actor_pos.to_index(self.sim_map.width))
-        else {
+        let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)].as_ref() else {
             return;
         };
         if actor.energy_left == 0 {
             return;
         }
-        actor.energy_left -= 1;
-        let total_energy_get = target.energy_left
+        let total_energy_get = (target.energy_left as f32
             * (0.1_f32.powf(
                 (self.species[actor.sid as usize].trophic_level as u8
                     - self.species[target.sid as usize].trophic_level as u8) as f32,
-            )) as usize;
-        actor.energy_left += total_energy_get;
+            )))
+        .round() as usize;
+        if let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)].as_mut() {
+            actor.energy_left += total_energy_get;
+        }
+        if let Some(target) = self.creatures[target_coor.to_index(self.sim_map.width)].as_mut() {
+            target.energy_left = target
+                .energy_left
+                .saturating_sub(self.species[target.sid as usize].max_energy / 10);
+        }
     }
     fn mating(&mut self, actor_pos: CoorUsize, target_pos: CoorUsize) {
         if self.is_target_out_of_map(target_pos) || !self.is_target_empty(target_pos) {

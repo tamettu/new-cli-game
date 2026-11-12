@@ -487,7 +487,7 @@ impl Creature {
         target_list: &Vec<CoorUsize>,
         map: &gen_map::GameMap,
     ) -> Option<CoorUsize> {
-        if self.gender == Male || self.energy_left == 0 || self.mating_cold_down != 0 {
+        if self.energy_left == 0 {
             return None;
         }
 
@@ -579,6 +579,9 @@ impl Creature {
         all_kinds: &Vec<CoorUsize>,
         map: &gen_map::GameMap,
     ) -> Option<ActorMovement> {
+        if self.mating_cold_down != 0 || self.gender == Male {
+            return None;
+        }
         if let (Some(_), Some(b)) = (
             self.get_nearby_creature(all_kinds, map),
             self.get_nearby_space(map),
