@@ -690,14 +690,13 @@ impl Creature {
         good_weight *= all_species[self.sid as usize].detect_positive_range;
         bad_weight *= all_species[self.sid as usize].detect_negative_range;
         match rand::random_range(0..=(good_weight + bad_weight)) {
-            a if a <= good_weight => self.get_movement_good_weight_debug(
-                all_species,
+            a if a <= good_weight => Some(self.get_movement_good_weight_debug(
                 all_food,
                 all_kinds,
                 all_eatale_animals,
                 map,
-            ),
-            a if a > good_weight => self.get_movement_bad_weight_debug(all_enemies),
+            )),
+            a if a > good_weight => Some(self.get_movement_bad_weight_debug(all_enemies)),
             _ => Some(ActorMovement::new(
                 self.pos,
                 Walk,
