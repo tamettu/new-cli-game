@@ -49,6 +49,7 @@ pub struct Specie {
     pub max_mating_cold_down: usize,
     pub detect_positive_range: usize,
     pub detect_negative_range: usize,
+    pub neurotic_rate: usize,
     pub icon: char,
     pub trophic_level: TrophicLevel,
     pub dietarycategories: DietaryCategories,
@@ -61,6 +62,7 @@ impl Specie {
         max_mating_cold_down: usize,
         detect_positive_range: usize,
         detect_negative_range: usize,
+        neurotic_rate: usize,
         icon: char,
         trophic_level: TrophicLevel,
         dietarycategories: DietaryCategories,
@@ -74,6 +76,7 @@ impl Specie {
             max_mating_cold_down,
             detect_positive_range,
             detect_negative_range,
+            neurotic_rate,
             icon,
             trophic_level,
             dietarycategories,
@@ -838,8 +841,14 @@ impl Creature {
         sorted_creatures: &[&Creature],
     ) -> Option<ActorMovement> {
         debug_tamettu(&format!(
-            "pos{},{}|hp{}|energy{}|step_cd{}|max_step_cd{}\n",
-            self.pos.x, self.pos.y, self.hp_left, self.energy_left, self.step_cd, self.speed
+            "pos{},{}|hp{}|energy{}|step_cd{}|max_step_cd{}|neurotic_rate{}\n",
+            self.pos.x,
+            self.pos.y,
+            self.hp_left,
+            self.energy_left,
+            self.step_cd,
+            self.speed,
+            all_species[self.sid as usize].neurotic_rate
         ));
         if all_species[self.sid as usize].trophic_level == Producer && self.mating_cold_down == 0 {
             return Some(ActorMovement::new(
@@ -862,6 +871,10 @@ impl Creature {
         if self.hp_left == 0 || self.step_cd != 0 || self.energy_left == 0 || self.speed == 0 {
             debug_tamettu("crature cant move\n");
             return None;
+        }
+        if rand::random_range(0..=100) <= all_species[self.sid as usize].neurotic_rate {
+            debug_tamettu("Neurotic ya ya ya ay siudfg2sd(W#*&%(Wjkdfb?~IUEY(~)))");
+            return Some(self.random_move());
         }
         let longer_range = if all_species[self.sid as usize].detect_positive_range
             > all_species[self.sid as usize].detect_negative_range

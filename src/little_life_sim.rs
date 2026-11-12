@@ -154,6 +154,9 @@ impl SimulationMap {
         .round() as usize;
         if let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)].as_mut() {
             actor.energy_left += total_energy_get;
+            if actor.energy_left > self.species[actor.sid as usize].max_energy {
+                actor.energy_left = self.species[actor.sid as usize].max_energy;
+            }
         }
         if let Some(target) = self.creatures[target_coor.to_index(self.sim_map.width)].as_mut() {
             target.energy_left = target
@@ -168,10 +171,9 @@ impl SimulationMap {
         let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)] else {
             return;
         };
-        self.creatures[actor_pos.to_index(self.sim_map.width)]
-            .as_mut()
-            .unwrap()
-            .energy_left -= 1;
+        if let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)].as_mut() {
+            actor.energy_left = actor.energy_left.saturating_sub(2);
+        }
         let _ = self.new_creature(Creature::new(
             &self.species[actor.sid as usize],
             target_pos,
@@ -244,21 +246,21 @@ impl SimulationMap {
     }
 }
 
-pub fn main(map_size: CoorUsize, species: &Vec<Specie>, init_animals_amount: usize) {
+pub fn main(map_size: CoorUsize, species: &Vec<Specie>, init_animals_amount: &[usize]) {
     game_tools::debug_override_tamettu("");
     let ref_species: Vec<&Specie> = species.iter().collect();
     let mut sim_map = SimulationMap::new(map_size.x, map_size.y, species.clone());
-    for i in species.iter() {
-        for _ in 0..init_animals_amount {
+    for i in 0..species.len() {
+        for _ in 0..init_animals_amount[i] {
             loop {
                 if sim_map
                     .new_creature(Creature::new(
-                        i,
+                        &species[i],
                         CoorUsize::new(
                             rand::random_range(0..sim_map.sim_map.width - 1),
                             rand::random_range(0..sim_map.sim_map.height - 1),
                         ),
-                        if i.trophic_level == TrophicLevel::Producer {
+                        if species[i].trophic_level == TrophicLevel::Producer {
                             Gender::Nonbinary
                         } else {
                             match rand::random_range(0..2) {
