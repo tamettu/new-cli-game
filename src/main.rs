@@ -19,8 +19,8 @@ fn main() {
     let mut id_generator = game_tools::IdGenerator::new();
     let species = vec![
         Specie::new(
-            10,
-            3,
+            100000,
+            7,
             300,
             6,
             30000,

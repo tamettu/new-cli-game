@@ -339,6 +339,7 @@ impl Creature {
                 .filter(|c| {
                     let target_specie = &all_species[c.sid as usize];
                     c.hp_left != 0
+                        && c.pos != self.pos
                         && target_specie.trophic_level == TrophicLevel::Producer
                         && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
                 })
@@ -442,10 +443,10 @@ impl Creature {
         let all_food_coor: Vec<CoorUsize> = all_local_creatures
             .par_iter()
             .filter(|c| {
-                c.hp_left != 0 &&
-                c.sid == self.sid
-                && self //lsp don't move!
-                .is_target_in_range(c.pos, self_specie.detect_positive_range)
+                c.hp_left != 0
+                    && c.pos != self.pos
+                    && c.sid == self.sid
+                    && self.is_target_in_range(c.pos, self_specie.detect_positive_range)
             })
             .map(|c| c.pos)
             .collect();
@@ -466,6 +467,7 @@ impl Creature {
             .filter(|c| {
                 let target_specie = &all_species[c.sid as usize];
                 c.hp_left != 0
+                    && c.pos != self.pos
                     && (target_specie.trophic_level > self_specie.trophic_level
                         || (target_specie.trophic_level == TrophicLevel::Top
                             && target_specie.trophic_level == self_specie.trophic_level))
@@ -885,18 +887,30 @@ impl Creature {
         let mut bad_weight: usize = 0;
         if let Some(have_food) = &all_food {
             debug_tamettu("have food(eatable animals that dead)\n");
+            for f in have_food {
+                debug_tamettu(&format!("{} {}\n", f.x, f.y));
+            }
             good_weight += have_food.len();
         }
         if let Some(have_eatable_animals) = &all_eatale_animals {
             debug_tamettu("have eat-able animals\n");
+            for e in have_eatable_animals {
+                debug_tamettu(&format!("{} {}\n", e.x, e.y));
+            }
             good_weight += have_eatable_animals.len();
         }
         if let Some(have_kind) = &all_kinds {
             debug_tamettu("have kinds\n");
+            for k in have_kind {
+                debug_tamettu(&format!("{} {}\n", k.x, k.y));
+            }
             good_weight += have_kind.len();
         }
         if let Some(have_enemy) = &all_enemies {
             debug_tamettu("have dangerous\n");
+            for en in have_enemy {
+                debug_tamettu(&format!("{} {}\n", en.x, en.y));
+            }
             bad_weight = have_enemy.len();
         }
         debug_tamettu("start choice good or bad way\n");
@@ -979,20 +993,19 @@ impl Creature {
         debug_tamettu("start checking the closet good creature\n");
         if let Some(new_coor) = all_creatures
             .iter()
-            .map(|&cs| {
+            .filter_map(|&cs| {
                 cs.iter()
-                    .map(|c| c.abs_usize(self.pos))
-                    .min()
+                    .min_by_key(|&&c| self.pos.abs_usize(c))
                     .map(|c| self.pos.to_coor_isize().vector_to(c.to_coor_isize()))
             })
-            .min()
-            .flatten()
+            .min_by_key(|&c| self.pos.abs_isize(c))
             .and_then(|closest_coor_dir| self.pos.to_coor_isize() + closest_coor_dir)
             .and_then(|coor| Some(coor.to_coor_usize()))
         {
             debug_tamettu(
                 "dont ask me how even find the closest coor and turn it to a useable coor. that is a crazy story\n",
             );
+            debug_tamettu(&format!("{} {}\n", new_coor.x, new_coor.y));
             return ActorMovement::new(self.pos, Walk, Some(new_coor));
         }
         debug_tamettu(
