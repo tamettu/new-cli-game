@@ -23,7 +23,7 @@ fn main() {
             3,
             300,
             6,
-            3,
+            30000,
             5,
             '󱩡',
             TrophicLevel::Primary,

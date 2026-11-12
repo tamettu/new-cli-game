@@ -930,19 +930,59 @@ impl Creature {
         map: &gen_map::GameMap,
     ) -> Option<ActorMovement> {
         debug_tamettu("start check 3 ass stuffs: eat-able? sex-able? atk-food-able?\n");
-        let go_eat = all_food.and_then(|c| self.is_able_to_eat(&c, map));
-        let go_mating = all_kinds.and_then(|c| self.is_able_to_mating(&c, map));
-        let go_atk_food = all_eatale_animals.and_then(|c| self.is_able_to_atk(&c, map));
+        let go_eat = all_food.as_ref().and_then(|c| self.is_able_to_eat(&c, map));
+        let go_mating = all_kinds
+            .as_ref()
+            .and_then(|c| self.is_able_to_mating(&c, map));
+        let go_atk_food = all_eatale_animals
+            .as_ref()
+            .and_then(|c| self.is_able_to_atk(&c, map));
         debug_tamettu(&format!(
             "eat:{}|sex:{}|atk:{}\n",
             if go_eat.is_none() { "N" } else { "Y" },
             if go_mating.is_none() { "N" } else { "Y" },
             if go_atk_food.is_none() { "N" } else { "Y" }
         ));
-        let all_possible_movement: Vec<&ActorMovement> = vec![go_eat, go_mating, go_atk_food]
+        let all_nearby: Vec<ActorMovement> = vec![go_eat, go_mating, go_atk_food]
             .iter()
-            .flatten()
+            .filter_map(|&c| c)
             .collect();
+        if all_nearby.len() != 0 {
+            let random_movement: ActorMovement =
+                all_nearby[rand::random_range(0..all_nearby.len())];
+            return Some(random_movement);
+        }
+        let all_closest_creature: Vec<&Vec<CoorUsize>> =
+            vec![all_food, all_kinds, all_eatale_animals]
+                .iter()
+                .filter_map(|&c| c.as_ref())
+                .collect();
+        if all_closest_creature.len() == 0 {
+            return Some(ActorMovement::new(
+                self.pos,
+                Walk,
+                Some(CoorUsize::new(
+                    self.pos
+                        .x
+                        .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
+                    self.pos
+                        .y
+                        .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
+                )),
+            ));
+        }
+        return Some(ActorMovement::new(
+            self.pos,
+            Walk,
+            Some(CoorUsize::new(
+                self.pos
+                    .x
+                    .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
+                self.pos
+                    .y
+                    .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
+            )),
+        ));
     }
     fn get_movement_bad_weight_debug(
         &self,

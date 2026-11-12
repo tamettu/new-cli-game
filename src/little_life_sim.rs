@@ -27,6 +27,7 @@ pub enum Movement {
     Mating,
     Gone,
 }
+#[derive(Copy, Clone)]
 pub struct ActorMovement {
     pub actor_pos: CoorUsize,
     pub action: Movement,
