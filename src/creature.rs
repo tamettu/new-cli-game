@@ -613,6 +613,20 @@ impl Creature {
             self.mating_cold_down -= 1;
         }
     }
+    fn random_move(&self) -> ActorMovement {
+        ActorMovement::new(
+            self.pos,
+            Walk,
+            Some(CoorUsize::new(
+                self.pos
+                    .x
+                    .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
+                self.pos
+                    .y
+                    .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
+            )),
+        )
+    }
     pub fn get_movement_leader(
         &self,
         all_species: &[&Specie],
@@ -906,18 +920,7 @@ impl Creature {
             }
             _ => {
                 debug_tamettu("no good no bad random walk\n");
-                Some(ActorMovement::new(
-                    self.pos,
-                    Walk,
-                    Some(CoorUsize::new(
-                        self.pos
-                            .x
-                            .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
-                        self.pos
-                            .y
-                            .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
-                    )),
-                ))
+                Some(self.random_move())
             }
         }
     }
@@ -929,6 +932,15 @@ impl Creature {
         all_eatale_animals: Option<Vec<CoorUsize>>,
         map: &gen_map::GameMap,
     ) -> Option<ActorMovement> {
+        debug_tamettu("start check is there nothing good detected\n");
+        let all_possible_creatures = vec![&all_food, &all_kinds, &all_eatale_animals];
+        let all_creatures: Vec<&Vec<CoorUsize>> = all_possible_creatures
+            .iter()
+            .filter_map(|&c| c.as_ref())
+            .collect();
+        if all_creatures.len() == 0 {
+            return Some(self.random_move());
+        }
         debug_tamettu("start check 3 ass stuffs: eat-able? sex-able? atk-food-able?\n");
         let go_eat = all_food.as_ref().and_then(|c| self.is_able_to_eat(&c, map));
         let go_mating = all_kinds
@@ -952,60 +964,38 @@ impl Creature {
                 all_nearby[rand::random_range(0..all_nearby.len())];
             return Some(random_movement);
         }
-        let all_closest_creature: Vec<&Vec<CoorUsize>> =
-            vec![all_food, all_kinds, all_eatale_animals]
-                .iter()
-                .filter_map(|&c| c.as_ref())
-                .collect();
-        if all_closest_creature.len() == 0 {
-            return Some(ActorMovement::new(
-                self.pos,
-                Walk,
-                Some(CoorUsize::new(
-                    self.pos
-                        .x
-                        .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
-                    self.pos
-                        .y
-                        .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
-                )),
-            ));
+        debug_tamettu("start checking the closet good creature\n");
+        if let Some(new_coor) = all_creatures
+            .iter()
+            .map(|&cs| {
+                cs.iter()
+                    .map(|c| c.abs_usize(self.pos))
+                    .min()
+                    .map(|c| self.pos.to_coor_isize().vector_to(c.to_coor_isize()))
+            })
+            .min()
+            .flatten()
+            .and_then(|closest_coor_dir| self.pos.to_coor_isize() + closest_coor_dir)
+            .and_then(|coor| Some(coor.to_coor_usize()))
+        {
+            debug_tamettu(
+                "dont ask me how even find the closest coor and turn it to a useable coor. that is a crazy story\n",
+            );
+            return Some(ActorMovement::new(self.pos, Walk, Some(new_coor)));
         }
-        return Some(ActorMovement::new(
-            self.pos,
-            Walk,
-            Some(CoorUsize::new(
-                self.pos
-                    .x
-                    .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
-                self.pos
-                    .y
-                    .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
-            )),
-        ));
+        debug_tamettu(
+            "if the find closest coor have no problem, then it is just didnt find the cloest one.... though it should be impossible....\n",
+        );
+        return Some(self.random_move());
     }
     fn get_movement_bad_weight_debug(
         &self,
         all_enemies: Option<Vec<CoorUsize>>,
     ) -> Option<ActorMovement> {
         debug_tamettu("choiced bad\n");
-        let random_walk = || -> ActorMovement {
-            return ActorMovement::new(
-                self.pos,
-                Walk,
-                Some(CoorUsize::new(
-                    self.pos
-                        .x
-                        .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
-                    self.pos
-                        .y
-                        .saturating_add_signed(rand::random_range(-1..2_i8) as isize),
-                )),
-            );
-        };
         let Some(enemies) = all_enemies else {
             debug_tamettu("no enemies\n");
-            return Some(random_walk());
+            return Some(self.random_move());
         };
         debug_tamettu("have enemies\n");
         let mut all_vector = CoorIsize::new(0, 0);
@@ -1020,7 +1010,7 @@ impl Creature {
         );
         if final_move == CoorIsize::new(0, 0) {
             debug_tamettu("coor is 0,0| just random pick one\n");
-            return Some(random_walk());
+            return Some(self.random_move());
         } else {
             debug_tamettu("the program is workable i think\n");
             return Some(ActorMovement::new(
