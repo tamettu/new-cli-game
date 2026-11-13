@@ -1,4 +1,4 @@
-use std::{fs::File, io::BufReader};
+use std::{fs::File, io::BufReader, time::Duration};
 
 use crate::{
     creature::{DietaryCategories, Specie, TrophicLevel},
@@ -19,28 +19,41 @@ fn main() {
     let mut id_generator = game_tools::IdGenerator::new();
     let species = vec![
         Specie::new(
-            12,
-            3,
+            120,
+            4,
             350,
-            43,
+            36,
+            3,
             5,
-            7,
-            22,
-            '󰤇',
+            16,
+            '',
             TrophicLevel::Primary,
             DietaryCategories::Herbivorous,
             &mut id_generator,
         ),
         Specie::new(
-            30,
+            250,
+            7,
+            830,
+            42,
+            4,
             5,
-            970,
-            65,
-            6,
-            2,
-            13,
+            15,
             '',
             TrophicLevel::Secondary,
+            DietaryCategories::Carnivorous,
+            &mut id_generator,
+        ),
+        Specie::new(
+            370,
+            8,
+            950,
+            50,
+            5,
+            3,
+            20,
+            '󱣻',
+            TrophicLevel::Top,
             DietaryCategories::Carnivorous,
             &mut id_generator,
         ),
@@ -48,7 +61,7 @@ fn main() {
             20,
             0,
             2000,
-            179,
+            265,
             0,
             0,
             0,
@@ -58,7 +71,13 @@ fn main() {
             &mut id_generator,
         ),
     ];
-    little_life_sim::main(CoorUsize::new(20, 15), &species, &[7, 5, 3]);
+    little_life_sim::main(
+        CoorUsize::new(135, 100),
+        &species,
+        &[230, 30, 14, 800],
+        Duration::from_millis(2),
+        50,
+    );
     // let mut ai_values = AiValues::default();
     // let test: HashMap<String, Decimal> = serde_json::from_reader(reader).unwrap();
     // for (k, v) in test {

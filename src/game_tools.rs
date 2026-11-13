@@ -284,3 +284,30 @@ pub fn debug_override_tamettu(text: &str) {
     write!(file, "{}", text).unwrap();
     return;
 }
+pub fn log_tamettu(file: &str, text: &str) {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .create(true)
+        .open(file)
+        .unwrap();
+    write!(file, "{}", text).unwrap();
+}
+pub fn logln_tamettu(file: &str, text: &str) {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .create(true)
+        .open(file)
+        .unwrap();
+    write!(file, "{}\n", text).unwrap();
+}
+pub fn logln_tamettu_clean(file: &str) {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(file)
+        .unwrap();
+    write!(file, "").unwrap();
+}

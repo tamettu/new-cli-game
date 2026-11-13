@@ -17,6 +17,9 @@ use crate::creature::TrophicLevel;
 use crate::game_tools;
 use crate::game_tools::CoorIsize;
 use crate::game_tools::CoorUsize;
+use crate::game_tools::log_tamettu;
+use crate::game_tools::logln_tamettu;
+use crate::game_tools::logln_tamettu_clean;
 use crate::gen_map;
 #[derive(Copy, Clone, Debug)]
 pub enum Movement {
@@ -172,6 +175,7 @@ impl SimulationMap {
         };
         if let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)].as_mut() {
             actor.energy_left = actor.energy_left.saturating_sub(2);
+            actor.mating_cold_down = self.species[actor.sid as usize].max_mating_cold_down;
         }
         let _ = self.new_creature(Creature::new(
             &self.species[actor.sid as usize],
@@ -195,9 +199,11 @@ impl SimulationMap {
         let mut creatures = self.get_creatures_only();
         creatures.sort_unstable_by_key(|&c| c.pos);
         let mut actions: Vec<ActorMovement> = Vec::with_capacity(creatures.len());
-        actions.extend(creatures.iter().filter_map(|&&c| {
-            c.get_movement_leader_debug(&ref_species, &self.sim_map, &creatures)
-        }));
+        actions.extend(
+            creatures
+                .iter()
+                .filter_map(|&&c| c.get_movement_leader(&ref_species, &self.sim_map, &creatures)),
+        );
 
         // ======================================= //
 
@@ -245,7 +251,13 @@ impl SimulationMap {
     }
 }
 
-pub fn main(map_size: CoorUsize, species: &Vec<Specie>, init_animals_amount: &[usize]) {
+pub fn main(
+    map_size: CoorUsize,
+    species: &Vec<Specie>,
+    init_animals_amount: &[usize],
+    rest_time: Duration,
+    how_long_log_once: usize,
+) {
     game_tools::debug_override_tamettu("");
     let ref_species: Vec<&Specie> = species.iter().collect();
     let mut sim_map = SimulationMap::new(map_size.x, map_size.y, species.clone());
@@ -279,9 +291,30 @@ pub fn main(map_size: CoorUsize, species: &Vec<Specie>, init_animals_amount: &[u
         }
     }
     let mut loop_count = 0;
+    let mut log_counter = 0;
+    logln_tamettu_clean("log.txt");
     loop {
+        log_counter += 1;
+        if log_counter == how_long_log_once {
+            log_counter = 0;
+            let mut species_amount: Vec<usize> = vec![0; species.len()];
+            sim_map
+                .get_creatures_only()
+                .iter()
+                .for_each(|cs| species_amount[cs.sid as usize] += 1);
+            species_amount
+                .iter()
+                .enumerate()
+                .for_each(|(index, amount)| {
+                    log_tamettu(
+                        "log.txt",
+                        &format!("{} {}|", species[index].trophic_level as usize, amount),
+                    )
+                });
+            logln_tamettu("log.txt", "");
+        }
         sim_map.sim_map.show_map_without_case();
-        thread::sleep(Duration::from_millis(0));
+        thread::sleep(rest_time);
         sim_map.update(&ref_species);
         loop_count += 1;
         game_tools::debug_tamettu(&format!("--- LOOP {} END ---\n", loop_count));
