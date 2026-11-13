@@ -22,7 +22,7 @@ fn main() {
             12,
             3,
             350,
-            22,
+            43,
             5,
             7,
             22,
@@ -34,8 +34,8 @@ fn main() {
         Specie::new(
             30,
             5,
-            1200,
-            45,
+            970,
+            65,
             6,
             2,
             13,
@@ -48,7 +48,7 @@ fn main() {
             20,
             0,
             2000,
-            45,
+            179,
             0,
             0,
             0,
@@ -58,7 +58,7 @@ fn main() {
             &mut id_generator,
         ),
     ];
-    little_life_sim::main(CoorUsize::new(70, 55), &species, &[54, 47, 39]);
+    little_life_sim::main(CoorUsize::new(20, 15), &species, &[7, 5, 3]);
     // let mut ai_values = AiValues::default();
     // let test: HashMap<String, Decimal> = serde_json::from_reader(reader).unwrap();
     // for (k, v) in test {

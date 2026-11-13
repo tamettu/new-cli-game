@@ -1,4 +1,3 @@
-use std::arch::x86_64::_mm_fpclass_ph_mask;
 use std::thread;
 use std::time::Duration;
 
@@ -282,7 +281,7 @@ pub fn main(map_size: CoorUsize, species: &Vec<Specie>, init_animals_amount: &[u
     let mut loop_count = 0;
     loop {
         sim_map.sim_map.show_map_without_case();
-        thread::sleep(Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(0));
         sim_map.update(&ref_species);
         loop_count += 1;
         game_tools::debug_tamettu(&format!("--- LOOP {} END ---\n", loop_count));

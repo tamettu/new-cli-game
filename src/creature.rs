@@ -869,7 +869,6 @@ impl Creature {
             ));
         }
         if self.hp_left == 0 || self.step_cd != 0 || self.energy_left == 0 || self.speed == 0 {
-            debug_tamettu("crature cant move\n");
             return None;
         }
         if rand::random_range(0..=100) <= all_species[self.sid as usize].neurotic_rate {
@@ -921,23 +920,14 @@ impl Creature {
         }
         if let Some(have_eatable_animals) = &all_eatale_animals {
             debug_tamettu("have eat-able animals\n");
-            for e in have_eatable_animals {
-                debug_tamettu(&format!("{} {}\n", e.x, e.y));
-            }
             good_weight += have_eatable_animals.len();
         }
         if let Some(have_kind) = &all_kinds {
             debug_tamettu("have kinds\n");
-            for k in have_kind {
-                debug_tamettu(&format!("{} {}\n", k.x, k.y));
-            }
             good_weight += have_kind.len();
         }
         if let Some(have_enemy) = &all_enemies {
             debug_tamettu("have dangerous\n");
-            for en in have_enemy {
-                debug_tamettu(&format!("{} {}\n", en.x, en.y));
-            }
             bad_weight = have_enemy.len();
         }
         debug_tamettu("start choice good or bad way\n");
