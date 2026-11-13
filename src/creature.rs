@@ -118,11 +118,10 @@ impl Creature {
             random_debuff(specie.max_hp),
             random_debuff(specie.max_speed),
             random_debuff(specie.max_energy),
-            if specie.max_mating_cold_down < 1 {
-                0
+            if specie.trophic_level == Producer {
+                specie.max_mating_cold_down
             } else {
-                (specie.max_mating_cold_down as f32 //jump to next line you ass lsp
-                    * rand::random_range(1.0..=2.0)) as usize
+                specie.max_hp + random_debuff(specie.max_mating_cold_down)
             },
         );
         let sid = specie.get_sid();
