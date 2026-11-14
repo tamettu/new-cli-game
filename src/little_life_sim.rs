@@ -1,21 +1,20 @@
 use std::thread;
 use std::time::Duration;
 
-use rayon::iter::IntoParallelIterator;
+use minifb::Icon::Buffer;
+use minifb::Window;
+use minifb::WindowOptions;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::IntoParallelRefMutIterator;
-use rayon::iter::ParallelExtend;
 use rayon::iter::ParallelIterator;
 
 use crate::config;
 use crate::creature::Creature;
 use crate::creature::Gender;
-use crate::creature::Gender::Male;
 use crate::creature::Gender::Nonbinary;
 use crate::creature::Specie;
 use crate::creature::TrophicLevel;
 use crate::game_tools;
-use crate::game_tools::CoorIsize;
 use crate::game_tools::CoorUsize;
 use crate::game_tools::log_tamettu;
 use crate::game_tools::logln_tamettu;
@@ -48,16 +47,24 @@ pub struct SimulationMap {
     pub sim_map: gen_map::GameMap,
     creatures: Vec<Option<Creature>>,
     species: Vec<Specie>,
+    pub buffer: Vec<u32>,
 }
 impl SimulationMap {
     pub fn new(width: usize, height: usize, species: Vec<Specie>) -> Self {
         let sim_map = gen_map::GameMap::new(width, height);
         let creatures = vec![None; width * height];
+        let buffer = vec![0_u32; width * height];
         SimulationMap {
             sim_map,
             creatures,
             species,
+            buffer,
         }
+    }
+    pub fn show_gui(&self, window: &mut Window) {
+        window
+            .update_with_buffer(&self.buffer, self.sim_map.width, self.sim_map.height)
+            .unwrap();
     }
     fn is_target_out_of_map(&self, target_pos: CoorUsize) -> bool {
         target_pos.x >= self.sim_map.width || target_pos.y >= self.sim_map.height
@@ -74,21 +81,18 @@ impl SimulationMap {
             &target.pos,
             &self.species[target.sid as usize].icon.to_string(),
         );
+        self.buffer[target.pos.to_index(self.sim_map.width)] =
+            self.species[target.sid as usize].color_for_gui;
         Ok(())
     }
-    fn change_coor(&mut self, actor: Creature, target_pos: CoorUsize, icon: &str) {
-        if self.is_target_out_of_map(actor.pos) || self.is_target_out_of_map(target_pos) {
+    fn change_coor(&mut self, actor: Creature, target_pos: CoorUsize) {
+        if self.is_target_out_of_map(target_pos) {
             return;
         }
         self.del_creature(actor.pos);
-        self.sim_map.change_str_map_val(&target_pos, icon);
-        self.creatures[target_pos.to_index(self.sim_map.width)] = Some(actor);
-        if let Some(Some(temp)) = self
-            .creatures
-            .get_mut(target_pos.to_index(self.sim_map.width))
-        {
-            temp.pos = target_pos;
-        }
+        let mut new_creature = actor;
+        new_creature.pos = target_pos;
+        let _ = self.new_creature(new_creature);
     }
     fn del_creature(&mut self, target_pos: CoorUsize) {
         if self.is_target_out_of_map(target_pos) {
@@ -97,12 +101,10 @@ impl SimulationMap {
         self.sim_map
             .change_str_map_val(&target_pos, config::EMPTY_ICON);
         self.creatures[target_pos.to_index(self.sim_map.width)] = None;
+        self.buffer[target_pos.to_index(self.sim_map.width)] = 65536;
     }
     fn get_creatures_only(&self) -> Vec<&Creature> {
         self.creatures.par_iter().flatten().collect()
-    }
-    pub fn get_creature(&self, target_pos: CoorUsize) -> &Option<Creature> {
-        &self.creatures[target_pos.to_index(self.sim_map.width)]
     }
     fn atk(&mut self, actor_pos: CoorUsize, target_pos: CoorUsize) {
         let Some(target) = self.creatures[target_pos.to_index(self.sim_map.width)].as_ref() else {
@@ -132,11 +134,7 @@ impl SimulationMap {
         if actor.energy_left == 0 {
             return;
         }
-        self.change_coor(
-            actor,
-            new_pos,
-            &self.species[actor.sid as usize].icon.to_string(),
-        );
+        self.change_coor(actor, new_pos);
     }
     fn eat(&mut self, actor_pos: CoorUsize, target_coor: CoorUsize) {
         let Some(target) = self.creatures[target_coor.to_index(self.sim_map.width)] else {
@@ -261,6 +259,19 @@ pub fn main(
     game_tools::debug_override_tamettu("");
     let ref_species: Vec<&Specie> = species.iter().collect();
     let mut sim_map = SimulationMap::new(map_size.x, map_size.y, species.clone());
+    let mut window = Window::new(
+        "Little life sim",
+        sim_map.sim_map.width,
+        sim_map.sim_map.height,
+        {
+            let mut opts = WindowOptions::default();
+            opts.scale_mode = minifb::ScaleMode::AspectRatioStretch;
+            opts.scale = minifb::Scale::X2;
+            opts.resize = true;
+            opts
+        },
+    )
+    .unwrap();
     for i in 0..species.len() {
         for _ in 0..init_animals_amount[i] {
             loop {
@@ -290,7 +301,6 @@ pub fn main(
             }
         }
     }
-    let mut loop_count = 0;
     let mut log_counter = 0;
     logln_tamettu_clean("log.txt");
     loop {
@@ -313,10 +323,9 @@ pub fn main(
                 });
             logln_tamettu("log.txt", "");
         }
-        sim_map.sim_map.show_map_without_case();
+        // sim_map.sim_map.show_map_without_case();
+        sim_map.show_gui(&mut window);
         thread::sleep(rest_time);
         sim_map.update(&ref_species);
-        loop_count += 1;
-        game_tools::debug_tamettu(&format!("--- LOOP {} END ---\n", loop_count));
     }
 }

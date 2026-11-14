@@ -14,8 +14,8 @@ mod menu;
 mod tictactoe;
 //------ ------------ ------- ------------ ------------ ------------ ----------
 fn main() {
-    let file = File::open("assets/tactictoe/ai_values.json").unwrap();
-    let reader = BufReader::new(file);
+    // let file = File::open("assets/tactictoe/ai_values.json").unwrap();
+    // let reader = BufReader::new(file);
     let mut id_generator = game_tools::IdGenerator::new();
     let species = vec![
         Specie::new(
@@ -23,9 +23,10 @@ fn main() {
             3,
             500,
             42,
-            3,
-            5,
-            16,
+            15,
+            20,
+            6,
+            0x003440EB,
             '',
             TrophicLevel::Primary,
             DietaryCategories::Herbivorous,
@@ -33,30 +34,32 @@ fn main() {
         ),
         Specie::new(
             420,
-            3,
-            1118,
-            50,
-            4,
             5,
+            1118,
+            47,
+            20,
+            14,
             10,
+            0x00C5BEC5,
             '',
             TrophicLevel::Secondary,
             DietaryCategories::Carnivorous,
             &mut id_generator,
         ),
-        // Specie::new(
-        //     500,
-        //     3,
-        //     1391,
-        //     60,
-        //     10,
-        //     3,
-        //     6,
-        //     '󱣻',
-        //     TrophicLevel::Top,
-        //     DietaryCategories::Carnivorous,
-        //     &mut id_generator,
-        // ),
+        Specie::new(
+            500,
+            3,
+            1391,
+            60,
+            25,
+            9,
+            6,
+            0x00E3446,
+            '󱣻',
+            TrophicLevel::Top,
+            DietaryCategories::Carnivorous,
+            &mut id_generator,
+        ),
         Specie::new(
             30,
             0,
@@ -65,6 +68,7 @@ fn main() {
             0,
             0,
             0,
+            0x007AEB34,
             '',
             TrophicLevel::Producer,
             DietaryCategories::NotApplicable,
@@ -72,10 +76,10 @@ fn main() {
         ),
     ];
     little_life_sim::main(
-        CoorUsize::new(70, 60),
+        CoorUsize::new(400, 400),
         &species,
-        &[120, 20, 200],
-        Duration::from_millis(50),
+        &[950, 100, 50, 650],
+        Duration::from_millis(0),
         50,
     );
     // let mut ai_values = AiValues::default();
