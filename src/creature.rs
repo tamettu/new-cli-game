@@ -1,6 +1,7 @@
 use crate::config::{self};
 use crate::creature::Gender::Male;
 use crate::creature::TrophicLevel::Producer;
+use crate::game_tools::OptionTUI::Continue;
 use crate::game_tools::{self, CoorIsize};
 use crate::game_tools::{CoorUsize, debug_tamettu};
 use crate::gen_map::{self};
@@ -124,7 +125,9 @@ impl Creature {
             if specie.trophic_level == Producer {
                 specie.max_mating_cold_down
             } else {
-                specie.max_hp + random_debuff(specie.max_mating_cold_down)
+                (specie.max_energy as f32 / 1.5
+                    + (specie.max_mating_cold_down as f32 * rand::random_range(1.0..=2.0)))
+                .round() as usize
             },
         );
         let sid = specie.get_sid();
@@ -521,7 +524,7 @@ impl Creature {
         target_dir
     }
     fn get_nearby_space(&self, map: &gen_map::GameMap) -> Option<CoorUsize> {
-        if self.gender == Male || self.energy_left == 0 {
+        if self.energy_left == 0 {
             return None;
         }
 
@@ -548,6 +551,29 @@ impl Creature {
             }
         }
         empty_sapce
+    }
+    fn is_moveable(&self, map: &gen_map::GameMap) -> bool {
+        if self.energy_left == 0 {
+            return false;
+        }
+        let all_dir: [CoorIsize; 8] = [
+            CoorIsize::new(0, 1),
+            CoorIsize::new(0, -1),
+            CoorIsize::new(1, 0),
+            CoorIsize::new(-1, 0),
+            CoorIsize::new(1, 1),
+            CoorIsize::new(-1, -1),
+            CoorIsize::new(1, -1),
+            CoorIsize::new(-1, 1),
+        ];
+        all_dir.iter().any(|&i| {
+            (self.pos.to_coor_isize() + i).is_some_and(|c| {
+                let new_coor = c.to_coor_usize();
+                new_coor.x < map.width
+                    && new_coor.y < map.height
+                    && map.get_str_map_val(&new_coor) == config::EMPTY_ICON
+            })
+        })
     }
     fn is_able_to_eat(
         &self,
@@ -600,9 +626,11 @@ impl Creature {
             None
         }
     }
-    pub fn update(&mut self, all_species: &[&Specie]) {
-        if self.energy_left != 0 {
-            self.energy_left -= 1
+    pub fn update(&mut self, all_species: &[&Specie], map: &gen_map::GameMap) {
+        self.energy_left = self.energy_left.saturating_sub(1);
+        if !self.is_moveable(map) {
+            self.energy_left = self.energy_left.saturating_sub(2);
+            self.hp_left = self.hp_left.saturating_sub(1);
         }
         if self.hp_left == 0 {
             return;
@@ -659,7 +687,12 @@ impl Creature {
                 None,
             ));
         }
-        if self.hp_left == 0 || self.step_cd != 0 || self.energy_left == 0 || self.speed == 0 {
+        if self.hp_left == 0
+            || self.step_cd != 0
+            || self.energy_left == 0
+            || self.speed == 0
+            || !self.is_moveable(map)
+        {
             return None;
         }
         if rand::random_range(0..=100) <= all_species[self.sid as usize].neurotic_rate {
@@ -691,8 +724,23 @@ impl Creature {
                 return None;
             }
         };
-        let all_food = self.scan_local_food(&all_local_creatures, all_species);
-        let all_eatale_animals = self.scan_local_eatable_animals(&all_local_creatures, all_species);
+        let all_food = if self.energy_left
+            <= (all_species[self.sid as usize].max_energy as f32 / 1.7).round() as usize
+            && rand::random_range(0..100) >= all_species[self.sid as usize].neurotic_rate
+        {
+            self.scan_local_food(&all_local_creatures, all_species)
+        } else {
+            None
+        };
+        let all_eatale_animals = if self.energy_left
+            <= (all_species[self.sid as usize].max_energy as f32 / 1.2).round() as usize
+            && rand::random_range(0..100) >= all_species[self.sid as usize].neurotic_rate
+        {
+            self.scan_local_eatable_animals(&all_local_creatures, all_species)
+        } else {
+            None
+        };
+
         let all_kinds = if self.mating_cold_down != 0
             && rand::random_range(0..100) >= all_species[self.sid as usize].neurotic_rate
         {

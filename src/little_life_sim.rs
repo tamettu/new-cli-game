@@ -14,6 +14,7 @@ use crate::creature::Gender;
 use crate::creature::Gender::Nonbinary;
 use crate::creature::Specie;
 use crate::creature::TrophicLevel;
+use crate::creature::TrophicLevel::Producer;
 use crate::game_tools;
 use crate::game_tools::CoorUsize;
 use crate::game_tools::log_tamettu;
@@ -53,7 +54,7 @@ impl SimulationMap {
     pub fn new(width: usize, height: usize, species: Vec<Specie>) -> Self {
         let sim_map = gen_map::GameMap::new(width, height);
         let creatures = vec![None; width * height];
-        let buffer = vec![0_u32; width * height];
+        let buffer = vec![0x00401624; width * height];
         SimulationMap {
             sim_map,
             creatures,
@@ -101,7 +102,7 @@ impl SimulationMap {
         self.sim_map
             .change_str_map_val(&target_pos, config::EMPTY_ICON);
         self.creatures[target_pos.to_index(self.sim_map.width)] = None;
-        self.buffer[target_pos.to_index(self.sim_map.width)] = 65536;
+        self.buffer[target_pos.to_index(self.sim_map.width)] = 0x00401624;
     }
     fn get_creatures_only(&self) -> Vec<&Creature> {
         self.creatures.par_iter().flatten().collect()
@@ -172,7 +173,13 @@ impl SimulationMap {
             return;
         };
         if let Some(actor) = self.creatures[actor_pos.to_index(self.sim_map.width)].as_mut() {
-            actor.energy_left = actor.energy_left.saturating_sub(2);
+            if self.species[actor.sid as usize].trophic_level == Producer {
+                actor.energy_left = actor.energy_left.saturating_sub(1)
+            } else {
+                actor.energy_left = actor
+                    .energy_left
+                    .saturating_sub((actor.energy_left as f32 / 1.5).round() as usize);
+            }
             actor.mating_cold_down = self.species[actor.sid as usize].max_mating_cold_down;
         }
         let _ = self.new_creature(Creature::new(
@@ -193,7 +200,7 @@ impl SimulationMap {
         self.creatures
             .par_iter_mut()
             .flatten()
-            .for_each(|c| c.update(&ref_species));
+            .for_each(|c| c.update(&ref_species, &self.sim_map));
         let mut creatures = self.get_creatures_only();
         creatures.sort_unstable_by_key(|&c| c.pos);
         let mut actions: Vec<ActorMovement> = Vec::with_capacity(creatures.len());
