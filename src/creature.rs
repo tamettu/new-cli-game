@@ -621,6 +621,9 @@ impl Creature {
         }
     }
     pub fn update(&mut self, all_species: &[&Specie], map: &gen_map::GameMap) {
+        if all_species[self.sid as usize].trophic_level == Producer && self.step_cd == 0 {
+            self.energy_left = self.energy_left.saturating_add(2);
+        }
         self.energy_left = self.energy_left.saturating_sub(1);
         if !self.is_moveable(map) {
             self.energy_left = self.energy_left.saturating_sub(2);
@@ -640,9 +643,7 @@ impl Creature {
         } else {
             self.step_cd -= 1;
         }
-        if self.mating_cold_down != 0 {
-            self.mating_cold_down -= 1;
-        }
+        self.mating_cold_down = self.mating_cold_down.saturating_sub(1);
     }
     fn random_move(&self) -> ActorMovement {
         ActorMovement::new(
@@ -665,16 +666,6 @@ impl Creature {
         sorted_creatures: &[&Creature],
         index_sort_creatures: &HashMap<CoorUsize, usize>,
     ) -> Option<ActorMovement> {
-        if all_species[self.sid as usize].trophic_level == Producer && self.mating_cold_down == 0 {
-            return Some(ActorMovement::new(
-                self.pos,
-                crate::little_life_sim::Movement::Mating,
-                Some(CoorUsize::new(
-                    rand::random_range(0..map.width),
-                    rand::random_range(0..map.height),
-                )),
-            ));
-        }
         if self.energy_left == 0 && self.hp_left == 0 {
             return Some(ActorMovement::new(
                 self.pos,
@@ -682,11 +673,21 @@ impl Creature {
                 None,
             ));
         }
-        if self.hp_left == 0
-            || self.step_cd != 0
-            || self.energy_left == 0
-            || self.speed == 0
-            || !self.is_moveable(map)
+        if all_species[self.sid as usize].trophic_level == Producer {
+            if self.mating_cold_down != 0 {
+                return None;
+            } else {
+                return Some(ActorMovement::new(
+                    self.pos,
+                    crate::little_life_sim::Movement::Mating,
+                    Some(CoorUsize::new(
+                        rand::random_range(0..map.width),
+                        rand::random_range(0..map.height),
+                    )),
+                ));
+            }
+        }
+        if self.hp_left == 0 || self.step_cd != 0 || self.energy_left == 0 || !self.is_moveable(map)
         {
             return None;
         }
@@ -723,25 +724,28 @@ impl Creature {
                 return None;
             }
         };
+        let is_neurotic =
+            rand::random_range(0..100) >= all_species[self.sid as usize].neurotic_rate;
         let all_food = if self.energy_left
-            <= (all_species[self.sid as usize].max_energy as f32 / 1.7).round() as usize
-            && rand::random_range(0..100) >= all_species[self.sid as usize].neurotic_rate
+            >= (all_species[self.sid as usize].max_energy as f32 / 1.2).round() as usize
+            && is_neurotic
         {
             self.scan_local_food(&all_local_creatures, all_species)
         } else {
             None
         };
         let all_eatale_animals = if self.energy_left
-            <= (all_species[self.sid as usize].max_energy as f32 / 1.2).round() as usize
-            && rand::random_range(0..100) >= all_species[self.sid as usize].neurotic_rate
+            >= (all_species[self.sid as usize].max_energy as f32 / 1.5).round() as usize
+            && is_neurotic
         {
             self.scan_local_eatable_animals(&all_local_creatures, all_species)
         } else {
             None
         };
-
-        let all_kinds = if self.mating_cold_down != 0
-            && rand::random_range(0..100) >= all_species[self.sid as usize].neurotic_rate
+        let all_kinds =
+            // if self.energy_left
+            // < (all_species[self.sid as usize].max_energy as f32 / 2.5).round() as usize
+            if  is_neurotic
         {
             None
         } else {
