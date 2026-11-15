@@ -1,13 +1,11 @@
 use crate::config::{self};
 use crate::creature::Gender::Male;
 use crate::creature::TrophicLevel::Producer;
-use crate::game_tools::OptionTUI::Continue;
+use crate::game_tools::CoorUsize;
 use crate::game_tools::{self, CoorIsize};
-use crate::game_tools::{CoorUsize, debug_tamettu};
 use crate::gen_map::{self};
 use crate::little_life_sim::ActorMovement;
 use crate::little_life_sim::Movement::Walk;
-use rand::random;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
 use std::collections::HashMap;
@@ -158,12 +156,8 @@ impl Creature {
         map_height: usize,
         sort_creatures: &[&'a Creature],
         range: usize,
+        index_sort_creatures: &HashMap<CoorUsize, usize>,
     ) -> Option<Vec<&'a Creature>> {
-        let index_sort_creatures: HashMap<CoorUsize, usize> = sort_creatures
-            .iter()
-            .enumerate()
-            .map(|(i, &c)| (c.pos, i))
-            .collect();
         let self_index = index_sort_creatures.get(&self.pos).unwrap();
         let half_range_1d = (range * map_width + range) / 3;
         let is_left_too_tight = (self_index.checked_sub(half_range_1d))
@@ -669,6 +663,7 @@ impl Creature {
         all_species: &[&Specie],
         map: &gen_map::GameMap,
         sorted_creatures: &[&Creature],
+        index_sort_creatures: &HashMap<CoorUsize, usize>,
     ) -> Option<ActorMovement> {
         if all_species[self.sid as usize].trophic_level == Producer && self.mating_cold_down == 0 {
             return Some(ActorMovement::new(
@@ -705,9 +700,13 @@ impl Creature {
         } else {
             all_species[self.sid as usize].detect_negative_range
         };
-        let Some(all_local_creatures) =
-            self.scan_area_leader(map.width, map.height, sorted_creatures, longer_range)
-        else {
+        let Some(all_local_creatures) = self.scan_area_leader(
+            map.width,
+            map.height,
+            sorted_creatures,
+            longer_range,
+            index_sort_creatures,
+        ) else {
             if let Some(random_step) = (self.pos.to_coor_isize()
                 + CoorIsize::new(
                     rand::random_range(-1_i8..2_i8) as isize,

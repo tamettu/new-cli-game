@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
@@ -54,7 +55,7 @@ impl SimulationMap {
     pub fn new(width: usize, height: usize, species: Vec<Specie>) -> Self {
         let sim_map = gen_map::GameMap::new(width, height);
         let creatures = vec![None; width * height];
-        let buffer = vec![0x00401624; width * height];
+        let buffer = vec![0; width * height];
         SimulationMap {
             sim_map,
             creatures,
@@ -102,7 +103,7 @@ impl SimulationMap {
         self.sim_map
             .change_str_map_val(&target_pos, config::EMPTY_ICON);
         self.creatures[target_pos.to_index(self.sim_map.width)] = None;
-        self.buffer[target_pos.to_index(self.sim_map.width)] = 0x00401624;
+        self.buffer[target_pos.to_index(self.sim_map.width)] = 0;
     }
     fn get_creatures_only(&self) -> Vec<&Creature> {
         self.creatures.par_iter().flatten().collect()
@@ -203,12 +204,20 @@ impl SimulationMap {
             .for_each(|c| c.update(&ref_species, &self.sim_map));
         let mut creatures = self.get_creatures_only();
         creatures.sort_unstable_by_key(|&c| c.pos);
+        let index_sort_creatures: HashMap<CoorUsize, usize> = creatures
+            .iter()
+            .enumerate()
+            .map(|(i, &c)| (c.pos, i))
+            .collect();
         let mut actions: Vec<ActorMovement> = Vec::with_capacity(creatures.len());
-        actions.extend(
-            creatures
-                .iter()
-                .filter_map(|&&c| c.get_movement_leader(&ref_species, &self.sim_map, &creatures)),
-        );
+        actions.extend(creatures.iter().filter_map(|&&c| {
+            c.get_movement_leader(
+                &ref_species,
+                &self.sim_map,
+                &creatures,
+                &index_sort_creatures,
+            )
+        }));
 
         // ======================================= //
 
