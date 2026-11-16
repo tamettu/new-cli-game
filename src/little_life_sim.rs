@@ -214,6 +214,7 @@ impl SimulationMap {
             c.get_movement_leader(
                 &ref_species,
                 &self.sim_map,
+                &self.creatures,
                 &creatures,
                 &index_sort_creatures,
             )
@@ -221,46 +222,23 @@ impl SimulationMap {
 
         // ======================================= //
 
-        let _ = actions.iter().for_each(|c| {
-            game_tools::debug_tamettu(&format!(
-                "{} {} {}| {:?} | {} {}\n",
-                if let Some(a) = self.creatures[c.actor_pos.to_index(self.sim_map.width)] {
-                    self.species[a.sid as usize].icon.to_string()
-                } else {
-                    "None".to_string()
-                },
-                c.actor_pos.x,
-                c.actor_pos.y,
-                c.action,
-                if let Some(a) = c.target_pos {
-                    a.x as isize
-                } else {
-                    -1
-                },
-                if let Some(a) = c.target_pos {
-                    a.y as isize
-                } else {
-                    -1
-                }
-            ));
-            match c.action {
-                Movement::Eat => {
-                    self.eat(c.actor_pos, c.target_pos.unwrap());
-                }
-                Movement::Atk => {
-                    self.atk(c.actor_pos, c.target_pos.unwrap());
-                }
-                Movement::Walk => {
-                    self.walk(c.actor_pos, c.target_pos.unwrap());
-                }
-                Movement::Mating => {
-                    self.mating(c.actor_pos, c.target_pos.unwrap());
-                }
-                Movement::Gone => {
-                    self.del_creature(c.actor_pos);
-                }
-                _ => (),
+        let _ = actions.iter().for_each(|c| match c.action {
+            Movement::Eat => {
+                self.eat(c.actor_pos, c.target_pos.unwrap());
             }
+            Movement::Atk => {
+                self.atk(c.actor_pos, c.target_pos.unwrap());
+            }
+            Movement::Walk => {
+                self.walk(c.actor_pos, c.target_pos.unwrap());
+            }
+            Movement::Mating => {
+                self.mating(c.actor_pos, c.target_pos.unwrap());
+            }
+            Movement::Gone => {
+                self.del_creature(c.actor_pos);
+            }
+            _ => (),
         });
     }
 }
@@ -341,7 +319,7 @@ pub fn main(
         }
         // sim_map.sim_map.show_map_without_case();
         sim_map.show_gui(&mut window);
-        thread::sleep(rest_time);
+        // thread::sleep(rest_time);
         sim_map.update(&ref_species);
     }
 }

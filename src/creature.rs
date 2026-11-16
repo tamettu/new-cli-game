@@ -154,6 +154,7 @@ impl Creature {
         &self,
         map_width: usize,
         map_height: usize,
+        whole_map: &'a [Option<Creature>],
         sort_creatures: &[&'a Creature],
         range: usize,
         index_sort_creatures: &HashMap<CoorUsize, usize>,
@@ -176,7 +177,7 @@ impl Creature {
             // ========= Both left and right have stuffs =========
             (Some(a), Some(b)) => {
                 if a && b {
-                    self.scan_area_when_dense(map_width, map_height, sort_creatures, range)
+                    self.scan_area_when_dense(map_width, map_height, whole_map, range)
                 } else {
                     self.scan_area_when_sparse(sort_creatures, &index_sort_creatures, range)
                 }
@@ -184,7 +185,7 @@ impl Creature {
             // ========= Only left have stuffs =========
             (Some(a), None) => {
                 if a {
-                    self.scan_area_when_dense(map_width, map_height, sort_creatures, range)
+                    self.scan_area_when_dense(map_width, map_height, whole_map, range)
                 } else {
                     self.scan_area_when_sparse(&sort_creatures, &index_sort_creatures, range)
                 }
@@ -192,7 +193,7 @@ impl Creature {
             // ========= Only right have stuffs =========
             (None, Some(b)) => {
                 if b {
-                    self.scan_area_when_dense(map_width, map_height, sort_creatures, range)
+                    self.scan_area_when_dense(map_width, map_height, whole_map, range)
                 } else {
                     self.scan_area_when_sparse(&sort_creatures, &index_sort_creatures, range)
                 }
@@ -250,13 +251,13 @@ impl Creature {
         map_width: usize,
         curr_coor: &CoorUsize,
         detect_range: usize,
-        all_creature_corr_and_creature: &HashMap<CoorUsize, &'a Creature>,
+        whole_map: &'a [Option<Creature>],
     ) -> Option<Vec<&'a Creature>> {
         let mut all_target_place: Vec<&Creature> = vec![];
         for x in 1..=detect_range {
             if let Some(top_x) = curr_coor.x.checked_sub_signed(x as isize) {
                 let new_coor = CoorUsize::new(top_x, curr_coor.y);
-                if let Some(&k) = all_creature_corr_and_creature.get(&new_coor) {
+                if let Some(k) = &whole_map[new_coor.to_index(map_width)] {
                     all_target_place.push(k);
                 }
             }
@@ -266,7 +267,7 @@ impl Creature {
                 .filter(|x| !(*x > map_width - 1))
             {
                 let new_coor = CoorUsize::new(bottom_x, curr_coor.y);
-                if let Some(&k) = all_creature_corr_and_creature.get(&new_coor) {
+                if let Some(k) = &whole_map[new_coor.to_index(map_width)] {
                     all_target_place.push(k);
                 }
             }
@@ -280,47 +281,37 @@ impl Creature {
         &self,
         map_width: usize,
         map_height: usize,
-        all_creature_place: &[&'a Creature],
+        whole_map: &'a [Option<Creature>],
         range: usize,
     ) -> Option<Vec<&'a Creature>> {
         if self.speed == 0 {
             return None;
         }
         let mut all_target_place: Vec<&Creature> = vec![];
-        let all_creature_corr_and_creature: HashMap<CoorUsize, &Creature> =
-            all_creature_place.par_iter().map(|c| (c.pos, *c)).collect();
-        if let Some(self_line) =
-            Self::scan_vertical_line(map_width, &self.pos, range, &all_creature_corr_and_creature)
-        {
+        if let Some(self_line) = Self::scan_vertical_line(map_width, &self.pos, range, &whole_map) {
             all_target_place.extend(self_line);
         }
         for y in 1..=range {
             if let Some(top_y) = self.pos.y.checked_sub(y) {
                 let new_top_y_coor = CoorUsize::new(self.pos.x, top_y);
-                if let Some(&k) = all_creature_corr_and_creature.get(&new_top_y_coor) {
+                if let Some(k) = &whole_map[new_top_y_coor.to_index(map_width)] {
                     all_target_place.push(k);
                 };
-                if let Some(new_coor) = Self::scan_vertical_line(
-                    map_width,
-                    &new_top_y_coor,
-                    range,
-                    &all_creature_corr_and_creature,
-                ) {
+                if let Some(new_coor) =
+                    Self::scan_vertical_line(map_width, &new_top_y_coor, range, &whole_map)
+                {
                     all_target_place.extend(new_coor);
                 }
             }
 
             if let Some(bottom_y) = self.pos.y.checked_add(y).filter(|&y| !(y > map_height - 1)) {
                 let new_bottom_y_coor = CoorUsize::new(self.pos.x, bottom_y);
-                if let Some(&k) = all_creature_corr_and_creature.get(&new_bottom_y_coor) {
+                if let Some(k) = &whole_map[new_bottom_y_coor.to_index(map_width)] {
                     all_target_place.push(k);
                 }
-                if let Some(new_coor) = Self::scan_vertical_line(
-                    map_width,
-                    &new_bottom_y_coor,
-                    range,
-                    &all_creature_corr_and_creature,
-                ) {
+                if let Some(new_coor) =
+                    Self::scan_vertical_line(map_width, &new_bottom_y_coor, range, &whole_map)
+                {
                     all_target_place.extend(new_coor);
                 }
             }
@@ -663,6 +654,7 @@ impl Creature {
         &self,
         all_species: &[&Specie],
         map: &gen_map::GameMap,
+        whole_map: &[Option<Creature>],
         sorted_creatures: &[&Creature],
         index_sort_creatures: &HashMap<CoorUsize, usize>,
     ) -> Option<ActorMovement> {
@@ -704,6 +696,7 @@ impl Creature {
         let Some(all_local_creatures) = self.scan_area_leader(
             map.width,
             map.height,
+            whole_map,
             sorted_creatures,
             longer_range,
             index_sort_creatures,
@@ -742,10 +735,9 @@ impl Creature {
         } else {
             None
         };
-        let all_kinds =
-            // if self.energy_left
-            // < (all_species[self.sid as usize].max_energy as f32 / 2.5).round() as usize
-            if  is_neurotic
+        let all_kinds = if self.energy_left
+            < (all_species[self.sid as usize].max_energy as f32 / 2.5).round() as usize
+            && is_neurotic
         {
             None
         } else {
@@ -809,7 +801,7 @@ impl Creature {
         all_eatale_animals: Option<Vec<CoorUsize>>,
         map: &gen_map::GameMap,
     ) -> ActorMovement {
-        let all_possible_creatures = vec![&all_food, &all_kinds, &all_eatale_animals];
+        let all_possible_creatures = [&all_food, &all_kinds, &all_eatale_animals];
         let all_creatures: Vec<&Vec<CoorUsize>> = all_possible_creatures
             .iter()
             .filter_map(|&c| c.as_ref())
