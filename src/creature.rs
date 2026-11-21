@@ -142,13 +142,8 @@ impl Creature {
         }
     }
     fn is_target_in_range(&self, target_coor: CoorUsize, range: usize) -> bool {
-        let is_y_in_range = (target_coor.y > self.pos.y && target_coor.y - self.pos.y <= range)
-            || (target_coor.y <= self.pos.y && self.pos.y - target_coor.y <= range);
-
-        let is_x_in_range = (target_coor.x > self.pos.x && target_coor.x - self.pos.x <= range)
-            || (target_coor.x <= self.pos.x && self.pos.x - target_coor.x <= range);
-
-        is_y_in_range && is_x_in_range
+        let abs_diff_coor = self.pos.abs_usize(target_coor);
+        abs_diff_coor.x <= range && abs_diff_coor.y <= range
     }
     fn scan_area_leader<'a>(
         &self,
@@ -163,43 +158,19 @@ impl Creature {
         let half_range_1d = (range * map_width + range) / 3;
         let is_left_too_tight = (self_index.checked_sub(half_range_1d))
             .and_then(|c| sort_creatures.get(c))
-            .and_then(|c| c.pos.to_coor_isize() * -1)
-            .and_then(|c| c + self.pos.to_coor_isize())
-            .and_then(|c| Some(c.abs_usize(self.pos)))
-            .and_then(|c| Some(c.x >= range / 3 && c.y >= range / 3));
+            .and_then(|c| Some(c.pos.abs_usize(self.pos)))
+            .and_then(|c| Some(c.x < range / 3 && c.y < range / 3))
+            .unwrap_or(false);
         let is_right_too_tight = (self_index.checked_add(half_range_1d))
             .and_then(|c| sort_creatures.get(c))
-            .and_then(|c| c.pos + self.pos)
-            .and_then(|c| Some(c.abs_usize(self.pos)))
-            .and_then(|c| Some(c.x >= range / 3 && c.y >= range / 3));
+            .and_then(|c| Some(c.pos.abs_usize(self.pos)))
+            .and_then(|c| Some(c.x < range / 3 && c.y < range / 3))
+            .unwrap_or(false);
 
-        match (is_left_too_tight, is_right_too_tight) {
-            // ========= Both left and right have stuffs =========
-            (Some(a), Some(b)) => {
-                if a && b {
-                    self.scan_area_when_dense(map_width, map_height, whole_map, range)
-                } else {
-                    self.scan_area_when_sparse(sort_creatures, &index_sort_creatures, range)
-                }
-            }
-            // ========= Only left have stuffs =========
-            (Some(a), None) => {
-                if a {
-                    self.scan_area_when_dense(map_width, map_height, whole_map, range)
-                } else {
-                    self.scan_area_when_sparse(&sort_creatures, &index_sort_creatures, range)
-                }
-            }
-            // ========= Only right have stuffs =========
-            (None, Some(b)) => {
-                if b {
-                    self.scan_area_when_dense(map_width, map_height, whole_map, range)
-                } else {
-                    self.scan_area_when_sparse(&sort_creatures, &index_sort_creatures, range)
-                }
-            }
-            // ========= Nothings nearby =========
-            _ => self.scan_area_when_sparse(&sort_creatures, &index_sort_creatures, range),
+        if is_left_too_tight && is_right_too_tight {
+            self.scan_area_when_sparse(sort_creatures, index_sort_creatures, range)
+        } else {
+            self.scan_area_when_dense(map_width, map_height, whole_map, range)
         }
     }
     fn scan_area_when_sparse<'a>(
@@ -217,29 +188,33 @@ impl Creature {
         loop {
             if self.is_target_in_range(sort_creatures[l_index].pos, range) {
                 all_target.push(sort_creatures[l_index]);
-                if let Some(a) = l_index.checked_sub(1) {
-                    l_index = a;
-                } else {
-                    break;
-                }
-                continue;
             }
-            break;
+            if sort_creatures[l_index].pos.y < self.pos.y.saturating_sub(range) {
+                break;
+            }
+            if let Some(a) = l_index.checked_sub(1) {
+                l_index = a;
+            } else {
+                break;
+            }
+            continue;
         }
         loop {
             if self.is_target_in_range(sort_creatures[r_index].pos, range) {
                 all_target.push(sort_creatures[r_index]);
-                if let Some(a) = r_index
-                    .checked_add(1) //lsp duck off here
-                    .filter(|&a| a < sort_creatures.len())
-                {
-                    r_index = a;
-                } else {
-                    break;
-                }
-                continue;
             }
-            break;
+            if sort_creatures[r_index].pos.y > self.pos.y.saturating_add(range) {
+                break;
+            }
+            if let Some(a) = r_index
+                .checked_add(1) //lsp duck off here
+                .filter(|&a| a < sort_creatures.len())
+            {
+                r_index = a;
+            } else {
+                break;
+            }
+            continue;
         }
         if all_target.is_empty() {
             None
